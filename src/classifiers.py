@@ -1,70 +1,201 @@
 """
-classifiers.py
-Density classification logic: OSM tags → CS2 zone types.
+classifiers.py — Clasificación OSM → CS2 oficial (Sesión 1.6)
+=============================================================
+Cada función devuelve el SUFIJO de la clave CS2 (ej. "high", "low_house"),
+no la clave completa. El caller compone la clave (ej. "res_high", "office_low").
 
-Key insight: OSM's landuse=residential is a coarse polygon that covers
-entire neighborhoods. To determine HIGH vs MEDIUM vs LOW density within
-those polygons, we cross-reference building:levels tags from individual
-building footprints. This two-pass strategy is what makes the classification
-realistic instead of assigning uniform density to entire districts.
+API pública:
+  - classify_apartment(tags, area_m2=None) → "high" | "mixed" | "low_rent" | "med"
+  - classify_residential_subtype(tags)     → "low_house" | "row" | None
+  - classify_landuse_residential(tags)     → "low_house"
+  - classify_commercial(tags, area_m2=None) → "high" | "low"
+  - classify_office(tags)                  → "high" | "low"
+  - classify_parking(tags)                 → "ramp" | "surface"
+  - polygon_area_m2(coords)                → float (m²) (helper)
 """
 
+import math
 
-def classify_residential(tags: dict, building_levels_index: dict, element_id: int) -> str:
+
+# ── Helpers ─────────────────────────────────────────────────────────────────
+
+def _effective_levels(tags: dict) -> int:
+    """Niveles efectivos: max(building:levels, height/3)."""
+    try:
+        tag_levels = int(tags.get("building:levels") or tags.get("levels") or 0)
+    except (ValueError, TypeError):
+        tag_levels = 0
+    try:
+        height_m = float(tags.get("height") or 0)
+    except (ValueError, TypeError):
+        height_m = 0.0
+    estimated_levels = round(height_m / 3) if height_m > 0 else 0
+    return max(tag_levels, estimated_levels)
+
+
+def polygon_area_m2(coords: list) -> float:
     """
-    Classify a residential landuse polygon into CS2 density tiers.
-
-    Priority order:
-    1. building:levels or levels tag on the polygon itself
-    2. Max building:levels from buildings indexed within the polygon
-    3. Explicit residential sub-tags (apartments, townhouse, etc.)
-    4. Fallback: low density
-
-    CS2 thresholds (calibrated against real Minneapolis neighborhoods):
-    - HIGH   (>=5 floors OR apartments/condo)  -> North American High Density Residential
-    - MEDIUM (>=3 floors OR terrace/townhouse) -> North American Medium Density Residential
-    - LOW    (default)                         -> North American Low Density Residential
+    Área aproximada de un polígono en m² usando proyección equirectangular
+    centrada en el centroide. Suficientemente precisa a escala urbana.
+    coords: lista de [lat, lon].
     """
-    tag_levels = int(tags.get("building:levels") or tags.get("levels") or 0)
-    idx_levels = building_levels_index.get(element_id, 0)
-    effective_levels = max(tag_levels, idx_levels)
+    if not coords or len(coords) < 3:
+        return 0.0
+    lat0 = sum(c[0] for c in coords) / len(coords)
+    cos_lat0 = math.cos(math.radians(lat0))
+    m_per_deg_lat = 111_320.0
+    m_per_deg_lon = 111_320.0 * cos_lat0
+    pts = [(c[1] * m_per_deg_lon, c[0] * m_per_deg_lat) for c in coords]
+    n = len(pts)
+    s = 0.0
+    for i in range(n):
+        x0, y0 = pts[i]
+        x1, y1 = pts[(i + 1) % n]
+        s += x0 * y1 - x1 * y0
+    return abs(s) / 2.0
 
-    residential_subtype = tags.get("residential", "").lower()
-    building_type = tags.get("building", "").lower()
 
-    if (effective_levels >= 5
-            or residential_subtype in ("apartments", "condominium", "condo")):
+def _is_apartment_mixed(tags: dict) -> bool:
+    """¿Un edificio de apartamentos tiene comercio en la misma vía OSM?"""
+    if tags.get("shop"):
+        return True
+    amenity = (tags.get("amenity") or "").lower()
+    if amenity in ("restaurant", "cafe", "bar", "pub", "fast_food"):
+        return True
+    if (tags.get("building:use") or "").lower() in ("mixed", "residential;commercial"):
+        return True
+    if (tags.get("landuse") or "").lower() in ("mixed", "mixed_use"):
+        return True
+    return False
+
+
+def _is_low_rent_explicit(tags: dict) -> bool:
+    """Tags que marcan explícitamente vivienda asequible / social."""
+    if (tags.get("social_housing") or "").lower() == "yes":
+        return True
+    if (tags.get("building") or "").lower() in ("public_housing", "council_house"):
+        return True
+    return False
+
+
+# ── Clasificadores residenciales ────────────────────────────────────────────
+
+def classify_apartment(tags: dict, area_m2: float | None = None) -> str:
+    """
+    Edificio de apartamentos → uno de los 4 sub-tipos residenciales CS2:
+      - 'mixed'    → Mixed Housing (comercio abajo + aptos)
+      - 'low_rent' → Low Rent Housing (bloques grandes asequibles)
+      - 'high'     → High Density Housing (torres 7+ pisos)
+      - 'med'      → Medium Density Housing (default, aptos pequeños)
+    """
+    if _is_apartment_mixed(tags):
+        return "mixed"
+
+    if _is_low_rent_explicit(tags):
+        return "low_rent"
+
+    building = (tags.get("building") or "").lower()
+    if building in ("tower", "residential_tower", "skyscraper"):
         return "high"
 
-    if (effective_levels >= 3
-            or building_type in ("terrace", "dormitory", "townhouse")
-            or residential_subtype in ("townhouse", "dormitory", "semi")):
-        return "medium"
+    eff = _effective_levels(tags)
+    if eff >= 7:
+        return "high"
+
+    # Heurística Low Rent: 4-6 pisos + footprint grande (≥1500 m²)
+    if 4 <= eff <= 6 and area_m2 is not None and area_m2 >= 1500:
+        return "low_rent"
+
+    return "med"
+
+
+def classify_residential_subtype(tags: dict) -> str | None:
+    """
+    Clasificar building tag específico (NO apartments).
+      - 'low_house' → casas detached / single-family
+      - 'row'       → row/town houses
+      - None        → no es un subtipo reconocido (caller debe decidir)
+    """
+    building = (tags.get("building") or "").lower()
+    residential = (tags.get("residential") or "").lower()
+
+    if building in ("house", "detached", "bungalow"):
+        return "low_house"
+
+    if building in ("terrace", "townhouse", "row_house",
+                    "semi", "semi_detached", "semidetached_house", "dormitory"):
+        return "row"
+
+    if residential in ("townhouse", "semi", "dormitory"):
+        return "row"
+
+    return None
+
+
+def classify_landuse_residential(tags: dict) -> str:
+    """
+    Fallback para polígonos landuse=residential sin building específico.
+    Asume Low Density Housing (suburbio típico de Minneapolis).
+    """
+    return "low_house"
+
+
+# ── Clasificador comercial ──────────────────────────────────────────────────
+
+def classify_commercial(tags: dict, area_m2: float | None = None) -> str:
+    """
+    Comercial → 'high' o 'low'.
+
+    HIGH: malls, hoteles grandes, cines, teatros, casinos, conference centres,
+          y commercial buildings con 4+ niveles o footprint grande.
+    LOW:  default — shops, restaurantes, gas stations, cafés, fast food.
+    """
+    shop = (tags.get("shop") or "").lower()
+    amenity = (tags.get("amenity") or "").lower()
+    tourism = (tags.get("tourism") or "").lower()
+    building = (tags.get("building") or "").lower()
+
+    if shop == "mall":
+        return "high"
+    if amenity in ("cinema", "theatre", "casino", "conference_centre"):
+        return "high"
+    if tourism == "hotel":
+        if _effective_levels(tags) >= 4 or (area_m2 is not None and area_m2 >= 2000):
+            return "high"
+        return "low"
+
+    if building == "commercial" and _effective_levels(tags) >= 4:
+        return "high"
+
+    if _effective_levels(tags) >= 5:
+        return "high"
 
     return "low"
 
 
-def classify_commercial(tags: dict) -> str:
-    """
-    Classify commercial zones into HIGH or LOW density.
+# ── Clasificador oficinas ───────────────────────────────────────────────────
 
-    CS2 thresholds:
-    - HIGH (>=4 floors) -> North American High Density Commercial
-    - LOW  (default)   -> North American Low Density Commercial
+def classify_office(tags: dict) -> str:
     """
-    levels = int(tags.get("building:levels") or tags.get("levels") or 1)
-    return "high" if levels >= 4 else "low"
+    Oficinas → 'high' o 'low'.
 
+    HIGH: skyscrapers, building=office con 4+ niveles efectivos.
+    LOW:  default — oficinas pequeñas en edificios bajos.
+    """
+    if (tags.get("building") or "").lower() == "skyscraper":
+        return "high"
+    if _effective_levels(tags) >= 4:
+        return "high"
+    return "low"
+
+
+# ── Clasificador parking (sin cambios) ──────────────────────────────────────
 
 def classify_parking(tags: dict) -> str:
     """
-    Distinguish structured parking (ramps) from surface lots.
-
-    CS2 distinction:
-    - RAMP    -> Parking Garage / Ramp asset
-    - SURFACE -> Surface Parking Lot (counts as no-zone area in gameplay)
+    Distinguir estacionamiento estructural (ramp/garage) de superficie.
     """
-    parking_type = tags.get("parking", "").lower()
+    parking_type = (tags.get("parking") or "").lower()
     if parking_type in ("multi-storey", "multistorey", "structure", "underground"):
         return "ramp"
     return "surface"

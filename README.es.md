@@ -1,115 +1,118 @@
-# CS2 Minneapolis Zoning — Herramienta GIS de Extracción v1.0
+# CS2 Minneapolis Zoning — Herramienta GIS de Extracción v3.0
 
-> Datos reales de zonificación desde OpenStreetMap → Cities: Skylines 2  
-> 100% open source · Sin API keys · Se ejecuta en ~15 minutos
+> Zonificación real de OpenStreetMap → Cities: Skylines 2
+> 100% open source · Sin API keys · Mapa interactivo dark · 81,000+ polígonos
 
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue)
-![Licencia MIT](https://img.shields.io/badge/Licencia-MIT-green)
-![Datos OSM](https://img.shields.io/badge/Datos-OpenStreetMap-orange)
+![License MIT](https://img.shields.io/badge/License-MIT-green)
+![OSM Data](https://img.shields.io/badge/Data-OpenStreetMap-orange)
+![Tests](https://img.shields.io/badge/tests-61%20passing-success)
 
-## Vista previa
+> 🇬🇧 English version: [README.md](README.md)
 
-![Mapa completo](docs/screenshots/preview_full.png)
+## Qué hace
 
-*Mapa interactivo de zonificación de Minneapolis — fondo CartoDB Dark Matter*
-
-## Historia del proyecto
-
-Este proyecto nació de querer recrear Minneapolis con el máximo realismo posible en Cities: Skylines 2.
-
-Llevaba meses construyendo una réplica 1:1 de la ciudad — copiando calles, infraestructura, transporte público — cuando llegué al problema de la zonificación. ¿Cómo saber qué partes de la ciudad son residenciales de alta densidad y cuáles son industriales? ¿Dónde están exactamente los distritos comerciales? Los portales GIS de Minneapolis tienen datos, pero en formatos propietarios y con licencias complicadas.
-
-La solución fue OpenStreetMap. Los colaboradores de OSM han mapeado con increíble detalle no solo las calles, sino también el uso del suelo, los tipos de edificios y las alturas. Y todo está disponible gratuitamente a través de la Overpass API.
-
-Lo que empezó como un script rápido se convirtió en un pipeline completo con manejo de errores, rotación de endpoints, clasificación por densidad y un visualizador interactivo. Ahora lo comparto para que cualquiera pueda recrear su ciudad favorita con datos reales.
-
-## Qué hace esta herramienta
-
-Extrae polígonos de zonificación reales de OpenStreetMap via la Overpass API y los clasifica automáticamente en los tipos de zona nativos de Cities: Skylines 2. El pipeline es:
+Extrae polígonos de zonificación reales desde OpenStreetMap (via Overpass API), los clasifica en **los 11 tipos de zona oficiales de Cities: Skylines 2** y los renderiza en un mapa interactivo dark-mode que puedes usar como referencia mientras construyes tu ciudad CS2.
 
 ```
 OpenStreetMap (Overpass API)
         ↓
-  extract_zoning.py          ← 8 queries secuenciales, reintento multi-endpoint
+  extract_zoning.py          ← 7 queries source, multi-endpoint con retry, spatial joins
         ↓
-  datos_zonificacion.js      ← Arrays JavaScript con polígonos clasificados
+  datos_zonificacion.js      ← Polígonos clasificados por tipo de zona CS2
         ↓
-  visualizer/index.html      ← Mapa interactivo Leaflet.js
+  visualizer/index.html      ← Mapa Leaflet.js (Canvas renderer para 80k+ polys)
 ```
 
-Sin API keys. Sin servicios de pago. Sin PostGIS. Solo Python + requests.
+Sin API keys. Sin servicios pagados. Sin PostGIS. Solo Python + un archivo HTML.
 
-## Tipos de zona mapeados
+## Mapeo de zonas CS2
 
-| Tag OSM | Condición | Zona CS2 | Color en el mapa |
-|---------|-----------|----------|-----------------|
-| `landuse=residential` | ≥5 pisos o apartamentos | High Density Residential | Rojo |
-| `landuse=residential` | ≥3 pisos o casas adosadas | Medium Density Residential | Naranja |
-| `landuse=residential` | por defecto | Low Density Residential | Amarillo |
-| `landuse=commercial` | ≥4 pisos | High Density Commercial | Azul |
-| `landuse=commercial` | por defecto | Low Density Commercial | Azul claro |
-| `landuse=retail` | — | Retail Hub | Celeste |
-| `landuse=industrial` | — | Industrial Zone | Dorado |
-| `amenity=parking` | multi-planta | Parking Garage / Ramp | Gris oscuro |
-| `amenity=parking` | por defecto | Surface Parking Lot | Gris |
-| `building=office` | — | Office / Government Building | Morado |
-| `landuse=mixed` | — | Mixed-Use Development | Cian |
+Las **11 zonas oficiales de CS2** + parking (referencia visual):
+
+**Residencial (verde, 6):**
+- Low Density Housing, Medium Density Row Housing, Medium Density Housing, **Mixed Housing** (teal), Low Rent Housing, High Density Housing
+
+**Comercial (azul, 2):** Low Density Business, High Density Business
+
+**Oficinas (morado, 2):** Low Density Offices, High Density Offices
+
+**Industrial (amarillo, 1):** Industrial Manufacturing
+
+**Parking (gris, no es zona CS2):** Surface Parking, Parking Structure
+
+La tabla detallada de reglas OSM → CS2 está en [README.md](README.md#cs2-zone-mapping).
 
 ## Inicio rápido
 
 ```bash
-# 1. Clonar el repositorio
+# 1. Clonar
 git clone https://github.com/Osyanne/cs2-minneapolis-zoning
 cd cs2-minneapolis-zoning
 
 # 2. Instalar uv (si no está instalado)
-# Linux/Mac:
-curl -LsSf https://astral.sh/uv/install.sh | sh
-# Windows (PowerShell):
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+# Windows: powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 
 # 3. Instalar dependencias
 cd src
 uv sync
 
-# 4. Extraer datos (~10-15 min, descarga desde OpenStreetMap)
+# 4. Extraer datos (~3-5 min, descarga de OpenStreetMap)
 uv run extract_zoning.py
 
 # 5. Abrir el visualizador
-# El script escribe en ../visualizer/datos_zonificacion.js automáticamente.
-# Abrir visualizer/index.html en el navegador.
+cd ../visualizer
+python -m http.server 8080
+# → abre http://localhost:8080 en tu navegador
 ```
 
-El script descargará ~5-6 MB de datos de zonificación desde OpenStreetMap en 8 queries secuenciales. El progreso se imprime en tiempo real.
+**Windows:** doble-click en `start-visualizer.bat` para arrancar todo automáticamente.
 
-## Adaptar a otra ciudad
+## Adaptar a tu ciudad
 
-1. Buscar el bounding box de tu ciudad con [Nominatim](https://nominatim.openstreetmap.org/)
-2. Editar `MINNEAPOLIS_BBOX` en `src/cs2_zones.py`:
-   ```python
-   MINNEAPOLIS_BBOX = "44.86,-93.38,45.05,-93.17"  # cambiar esto
-   ```
-3. O pasarlo como argumento:
-   ```bash
-   uv run extract_zoning.py --bbox "40.70,-74.02,40.83,-73.91"  # ejemplo Nueva York
-   ```
-4. Abrir `visualizer/index.html` — el mapa se centra automáticamente en tus datos
-5. Ajustar los umbrales de densidad en `src/classifiers.py` si tu ciudad tiene patrones distintos
+Edita `MINNEAPOLIS_BBOX` en `src/cs2_zones.py` o pasa `--bbox "sur,oeste,norte,este"` al script:
 
-Ver [docs/adapting-to-other-cities.md](docs/adapting-to-other-cities.md) para la guía completa.
+```bash
+uv run extract_zoning.py --bbox "40.70,-74.02,40.83,-73.91"  # NYC ejemplo
+```
+
+Ver [docs/adapting-to-other-cities.md](docs/adapting-to-other-cities.md) para guía detallada.
+
+## Optimizaciones de rendimiento (v3.0)
+
+| Feature | Impacto |
+|---|---|
+| **Canvas renderer** | Pan/zoom con 81k polígonos: laggy → fluido |
+| **Tier-based hiding** | Auto-oculta casas individuales en zoom <14 |
+| **localStorage cache** | Segunda carga instantánea (24h TTL) |
+| **Prebuilt data mode** | Primera carga <1s vs 3-5 min de Overpass live |
+| **Spatial join** | Mixed Housing: 3 → 123 polígonos detectados |
+| **Multi-endpoint retry** | Resiliente a sobrecarga de Overpass |
+
+## Evolución del proyecto
+
+Los planes detallados están en [docs/plans/](docs/plans/):
+
+- **Sesión 1** — clasificación de densidad, visualizador básico
+- **Sesión 1.5** — 5 bugs cerrados + paleta CS Skylines + 32 tests
+- **Sesión 1.6** — modelo realineado a CS2 oficial (13 zonas), heurística de footprint, paleta de 4 familias
+- **Sesión 1.7** — Canvas renderer + tier-based hiding por área de polígono
+- **Sesión 1.8** (experimental, revertida) — augmentación con Microsoft Buildings. El script `src/extract_msbuildings.py` queda en el repo para mejorar en el futuro. Bug conocido: clasifica mal casas suburbanas cerca de corredores comerciales.
 
 ## Metodología
 
-Todas las decisiones de diseño están documentadas en [METHODOLOGY.md](METHODOLOGY.md): por qué queries secuenciales en vez de una sola, por qué la clasificación de densidad en dos pasadas, por qué rotación multi-endpoint.
+Todas las decisiones de diseño documentadas en [METHODOLOGY.md](METHODOLOGY.md).
 
-## Herramientas utilizadas
+## Cobertura de datos
 
-- **Python 3.11** + **[uv](https://docs.astral.sh/uv/)** — gestión de paquetes
-- **[Overpass API](https://overpass-api.de/)** — extracción de datos OSM (gratis, sin key)
-- **[Leaflet.js](https://leafletjs.com/)** — renderizado del mapa interactivo
-- **[CartoDB Dark Matter](https://carto.com/basemaps/)** — capa base (tiles gratuitos)
+| | |
+|---|---|
+| **Bounding box** | `44.86,-93.38,45.05,-93.17` (Mineapolis + bordes inmediatos) |
+| **Polígonos totales** | 81,732 |
+| **Tests** | 61 pasando (50 clasificador + 11 sanidad de queries) |
+| **Última extracción** | 2026-05-14 |
 
 ## Licencia
 
-MIT — ver [LICENSE](LICENSE)  
-Datos del mapa © colaboradores de OpenStreetMap, disponibles bajo la [Open Database License (ODbL)](https://www.openstreetmap.org/copyright)
+MIT — ver [LICENSE](LICENSE)
+Datos de mapa © contribuidores OpenStreetMap bajo [Open Database License (ODbL)](https://www.openstreetmap.org/copyright)

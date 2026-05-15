@@ -1,7 +1,15 @@
-# Generated data (too large for git)
+# Generated data — el visualizer/datos_zonificacion.js SÍ se trackea (instant load)
 datos_zonificacion.js
 !data/sample_output.js
 !visualizer/datos_zonificacion.js
+
+# Sesión 1.8 — Microsoft Buildings augmentation (no se trackea, requiere descargar 96MB)
+visualizer/datos_msbuildings.js
+
+# Backups locales y caches (no para el repo)
+.backup-*/
+.cache/
+SESION1_INSTRUCCIONES.md
 
 # Python
 __pycache__/
@@ -9,6 +17,7 @@ __pycache__/
 .venv/
 *.egg-info/
 dist/
+.pytest_cache/
 
 # Node (bbox-mcp-server local)
 node_modules/

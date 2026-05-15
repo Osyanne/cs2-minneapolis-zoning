@@ -1,59 +1,99 @@
 """
 overpass_client.py
-Multiendpoint Overpass API client with exponential backoff and 504 retry logic.
+==================
+Cliente HTTP para la Overpass API con retry exponencial y rotación de endpoints.
+
+Uso:
+    from overpass_client import query_with_retry
+    data = query_with_retry(overpass_ql_string, label="residential")
+    # data es un dict JSON con la clave 'elements'
+
+Diseño:
+- 3 endpoints públicos (overpass-api.de, kumi.systems, mail.ru)
+- Cada query: prueba endpoints en orden hasta que uno responda
+- Retry con backoff exponencial (5s, 15s, 30s) si TODOS los endpoints fallan
+- Timeout de request HTTP a 240s (las queries pesadas tardan 90-180s)
 """
+
+from __future__ import annotations
+
 import time
+from typing import Any
+
 import requests
-from typing import Optional
+
 
 ENDPOINTS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
-    "https://overpass.openstreetmap.ru/api/interpreter",
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
 ]
 
-HEADERS = {
-    "User-Agent": "CS2-Minneapolis-Zoning/1.0 (github.com/Osyanne/cs2-minneapolis-zoning)",
-    "Content-Type": "application/x-www-form-urlencoded",
-}
+# Backoff entre rounds completos (cuando los 3 endpoints fallaron)
+RETRY_DELAYS_S = [5, 15, 30]
+HTTP_TIMEOUT_S = 240
 
 
-def query_with_retry(query: str, label: str, max_attempts: int = 3) -> dict:
+class OverpassError(RuntimeError):
+    """Una query Overpass falló tras agotar reintentos."""
+
+
+def _try_endpoint(endpoint: str, query: str, label: str) -> dict[str, Any]:
+    """Intenta una sola query contra un endpoint. Lanza excepción si falla."""
+    response = requests.post(
+        endpoint,
+        data={"data": query},
+        timeout=HTTP_TIMEOUT_S,
+        headers={"User-Agent": "cs2-minneapolis-zoning/2.0 (educational use)"},
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if "elements" not in payload:
+        raise ValueError(f"respuesta sin 'elements' (¿error de query?): {payload!r}")
+    return payload
+
+
+def query_with_retry(query: str, label: str = "query") -> dict[str, Any]:
     """
-    Send an Overpass QL query across all endpoints with retry logic.
+    Ejecuta una query Overpass QL con retry y rotación de endpoints.
 
-    Strategy:
-    - Round-robin across 4 community endpoints (avoids single point of failure)
-    - Exponential backoff between attempts (3s, 6s, 12s)
-    - Raises RuntimeError only when all endpoints fail all attempts
+    Args:
+        query: Cadena Overpass QL (incluye [out:json][timeout:N]; ... ;out geom;).
+        label: Etiqueta legible para logs (ej. 'residential').
 
-    This pattern is essential because Overpass's public instance frequently
-    returns HTTP 429 (rate limit) or 504 (gateway timeout) for large bboxes.
-    Rotating endpoints distributes load and improves reliability significantly.
+    Returns:
+        El JSON parseado de la respuesta (dict con clave 'elements').
+
+    Raises:
+        OverpassError: si todos los endpoints fallaron en todos los reintentos.
     """
-    wait = 3
-    for attempt in range(1, max_attempts + 1):
+    last_errors: list[str] = []
+
+    for round_idx in range(len(RETRY_DELAYS_S) + 1):
         for endpoint in ENDPOINTS:
+            short_name = endpoint.replace("https://", "").split("/")[0]
             try:
-                host = endpoint.split("/")[2]
-                print(f"  [{label}] {host} (attempt {attempt})... ", end="", flush=True)
-                resp = requests.post(
-                    endpoint,
-                    data={"data": query},
-                    headers=HEADERS,
-                    timeout=200,
-                )
-                if resp.status_code == 200:
-                    size_kb = len(resp.content) / 1024
-                    print(f"OK ({size_kb:.0f} KB)")
-                    return resp.json()
-                print(f"HTTP {resp.status_code}")
-            except requests.exceptions.Timeout:
-                print("TIMEOUT")
-            except requests.exceptions.RequestException as e:
-                print(f"ERROR: {str(e)[:60]}")
-            time.sleep(wait)
-        wait *= 2  # exponential backoff
+                print(f"        [{label}] -> {short_name} (round {round_idx + 1})", flush=True)
+                start = time.monotonic()
+                data = _try_endpoint(endpoint, query, label)
+                elapsed = time.monotonic() - start
+                count = len(data.get("elements", []))
+                print(f"        [{label}] OK {short_name} ({count} elementos en {elapsed:.1f}s)",
+                      flush=True)
+                return data
+            except (requests.RequestException, ValueError) as e:
+                msg = f"{short_name}: {type(e).__name__}: {e}"
+                last_errors.append(msg)
+                print(f"        [{label}] FAIL {msg}", flush=True)
 
-    raise RuntimeError(f"All endpoints failed for query: {label}")
+        # Todos los endpoints fallaron en esta ronda. Backoff antes de reintentar.
+        if round_idx < len(RETRY_DELAYS_S):
+            delay = RETRY_DELAYS_S[round_idx]
+            print(f"        [{label}] todos los endpoints fallaron — esperando {delay}s antes de reintentar",
+                  flush=True)
+            time.sleep(delay)
+
+    raise OverpassError(
+        f"[{label}] tras {len(RETRY_DELAYS_S) + 1} rondas, todos los endpoints fallaron:\n  "
+        + "\n  ".join(last_errors[-6:])  # últimos 6 errores para no saturar
+    )

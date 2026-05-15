@@ -1,35 +1,42 @@
 #!/usr/bin/env python3
 """
-extract_zoning.py — CS2 Minneapolis Zoning Pipeline v1.0
-=========================================================
-Extracts real-world zoning polygons from OpenStreetMap via Overpass API
-and exports them as a JavaScript data file ready to be loaded by the
-Leaflet.js visualizer.
+extract_zoning.py — CS2 Minneapolis Zoning Pipeline v3.0 (Sesión 1.6)
+======================================================================
+Extrae polígonos de zonificación real desde OpenStreetMap y los exporta
+como un archivo JS listo para el visualizador Leaflet.
 
-Usage:
+Cambios v3.0 (vs v2.0):
+- Modelo de zonas realineado a CS2 oficial (13 keys total)
+- Residencial dividido en 6 sub-tipos: low_house, row, med, mixed, low_rent, high
+- Office dividido en low/high
+- Retail Hub fusionado en com_low
+- mixed + mixed_res_com fusionados en res_mixed
+- Heurística de footprint (m²) para distinguir Low Rent vs Med apartments
+
+Uso:
     cd src
     uv run extract_zoning.py
     uv run extract_zoning.py --bbox "44.86,-93.38,45.05,-93.17"
     uv run extract_zoning.py --out ../visualizer/datos_zonificacion.js
-
-Requirements:
-    uv (https://docs.astral.sh/uv/) — no manual pip install needed.
-    Run `uv sync` once, then `uv run extract_zoning.py`.
-
-Output:
-    A .js file containing 7 JavaScript arrays (DATA_RESIDENTIAL,
-    DATA_COMMERCIAL, DATA_INDUSTRIAL, DATA_RETAIL, DATA_PARKING,
-    DATA_OFFICE, DATA_MIXED) ready to be <script src="..."> in index.html.
 """
 
 import argparse
 import json
 import sys
+from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
 from overpass_client import query_with_retry
-from classifiers import classify_residential, classify_commercial, classify_parking
+from classifiers import (
+    classify_apartment,
+    classify_residential_subtype,
+    classify_landuse_residential,
+    classify_commercial,
+    classify_office,
+    classify_parking,
+    polygon_area_m2,
+)
 from cs2_zones import CS2_LABELS, MINNEAPOLIS_BBOX, build_queries
 
 
@@ -61,10 +68,21 @@ def extract_coords(element: dict) -> list | None:
     return coords_from_relation(element)
 
 
+def make_item(el: dict, coords: list, cs2_key: str) -> dict:
+    tags = el.get("tags") or {}
+    return {
+        "id": el["id"],
+        "name": tags.get("name", ""),
+        "coords": coords,
+        "cs2_key": cs2_key,
+        "cs2": CS2_LABELS[cs2_key],
+    }
+
+
 # ── Main pipeline ─────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="Extract OSM zoning data for CS2")
+    parser = argparse.ArgumentParser(description="Extract OSM zoning data for CS2 (v3.0)")
     parser.add_argument(
         "--bbox",
         default=MINNEAPOLIS_BBOX,
@@ -81,169 +99,121 @@ def main():
     out_path = Path(args.out)
     queries = build_queries(bbox)
 
-    print(f"CS2 Minneapolis Zoning Extractor v1.0")
+    print("CS2 Minneapolis Zoning Extractor v3.0 — CS2-aligned model")
     print(f"Bounding Box : {bbox}")
     print(f"Output       : {out_path}\n")
 
-    # ── Step 1: Build density index ───────────────────────────────────────────
-    print("[1/3] Building residential density index...")
-    bld_data = query_with_retry(queries["buildings_levels"], "buildings_levels")
-    building_index: dict[int, int] = {}
-    for el in bld_data.get("elements", []):
-        lvl = int((el.get("tags") or {}).get("building:levels", 0))
-        if lvl > 0:
-            building_index[el["id"]] = lvl
-    print(f"      Index: {len(building_index)} buildings with level data\n")
-
-    # ── Step 2: Download all polygons ─────────────────────────────────────────
-    print("[2/3] Downloading zoning polygons (7 sequential queries)...")
-    CATEGORIES = ["residential", "commercial", "industrial", "retail", "parking", "office", "mixed"]
+    # ── Step 1: Download all source categories ────────────────────────────────
+    # ORDEN IMPORTANTE: mixed_apartments PRIMERO → captura apartments que tienen
+    # POIs comerciales dentro (spatial join) → se clasifican como res_mixed.
+    # Luego apartments procesa el resto sin spatial join.
+    SOURCE_KEYS = [
+        "mixed_apartments",
+        "apartments",
+        "landuse_residential",
+        "residential_subtypes",
+        "commercial",
+        "office",
+        "industrial",
+        "parking",
+    ]
+    print(f"[1/2] Downloading {len(SOURCE_KEYS)} source queries from Overpass...")
     raw: dict[str, list] = {}
-    for cat in CATEGORIES:
-        result = query_with_retry(queries[cat], cat)
-        raw[cat] = result.get("elements", [])
-        print(f"      {cat}: {len(raw[cat])} elements")
+    for key in SOURCE_KEYS:
+        result = query_with_retry(queries[key], key)
+        raw[key] = result.get("elements", [])
+        print(f"      {key:<24}: {len(raw[key])} elements")
 
-    # ── Step 3: Classify ──────────────────────────────────────────────────────
-    print("\n[3/3] Classifying zones...")
+    # ── Step 2: Classify ──────────────────────────────────────────────────────
+    print("\n[2/2] Classifying zones into CS2 model...")
 
-    output: dict[str, list] = {cat: [] for cat in CATEGORIES}
+    # Output bucketed by CS2 key for the visualizer
+    output: dict[str, list] = defaultdict(list)
     skipped = 0
-    commercial_ids: set[int] = set()
+    seen_ids: set[int] = set()
 
-    # Commercial must run first to build dedup set for office pass
+    def add(el: dict, cs2_key: str) -> bool:
+        """Add element to output bucket, dedup by OSM id across categories."""
+        nonlocal skipped
+        if el["id"] in seen_ids:
+            return False
+        coords = extract_coords(el)
+        if not coords:
+            skipped += 1
+            return False
+        seen_ids.add(el["id"])
+        output[cs2_key].append(make_item(el, coords, cs2_key))
+        return True
+
+    # 0. Mixed apartments — spatial join: apartments con POIs comerciales dentro
+    #    Todos los elementos retornados por esta query son Mixed Housing directos.
+    for el in raw["mixed_apartments"]:
+        add(el, "res_mixed")
+
+    # 1. Apartments — el resto (sin POIs comerciales dentro)
+    for el in raw["apartments"]:
+        coords = extract_coords(el)
+        if not coords:
+            continue
+        area = polygon_area_m2(coords)
+        suffix = classify_apartment(el.get("tags") or {}, area)
+        add(el, f"res_{suffix}")
+
+    # 2. Residential subtypes (terrace, townhouse, house, detached, etc.)
+    for el in raw["residential_subtypes"]:
+        suffix = classify_residential_subtype(el.get("tags") or {})
+        if suffix is None:
+            continue
+        add(el, f"res_{suffix}")
+
+    # 3. Landuse=residential (fallback for areas without specific buildings)
+    for el in raw["landuse_residential"]:
+        suffix = classify_landuse_residential(el.get("tags") or {})
+        add(el, f"res_{suffix}")
+
+    # 4. Commercial
     for el in raw["commercial"]:
-        commercial_ids.add(el["id"])
-        tags = el.get("tags") or {}
         coords = extract_coords(el)
         if not coords:
-            skipped += 1
             continue
-        zone = classify_commercial(tags)
-        output["commercial"].append({
-            "id": el["id"],
-            "name": tags.get("name", ""),
-            "coords": coords,
-            "zone": zone,
-            "cs2": CS2_LABELS[f"com_{zone}"],
-        })
+        area = polygon_area_m2(coords)
+        suffix = classify_commercial(el.get("tags") or {}, area)
+        add(el, f"com_{suffix}")
 
-    for el in raw["residential"]:
-        tags = el.get("tags") or {}
-        coords = extract_coords(el)
-        if not coords:
-            skipped += 1
-            continue
-        zone = classify_residential(tags, building_index, el["id"])
-        cs2_key = {"high": "res_high", "medium": "res_med", "low": "res_low"}[zone]
-        output["residential"].append({
-            "id": el["id"],
-            "name": tags.get("name", ""),
-            "coords": coords,
-            "zone": zone,
-            "cs2": CS2_LABELS[cs2_key],
-        })
-
-    for el in raw["industrial"]:
-        tags = el.get("tags") or {}
-        coords = extract_coords(el)
-        if not coords:
-            skipped += 1
-            continue
-        output["industrial"].append({
-            "id": el["id"],
-            "name": tags.get("name", ""),
-            "coords": coords,
-            "zone": "industrial",
-            "cs2": CS2_LABELS["industrial"],
-        })
-
-    for el in raw["retail"]:
-        tags = el.get("tags") or {}
-        coords = extract_coords(el)
-        if not coords:
-            skipped += 1
-            continue
-        output["retail"].append({
-            "id": el["id"],
-            "name": tags.get("name", ""),
-            "coords": coords,
-            "zone": "retail",
-            "cs2": CS2_LABELS["retail"],
-        })
-
-    for el in raw["parking"]:
-        tags = el.get("tags") or {}
-        coords = extract_coords(el)
-        if not coords:
-            skipped += 1
-            continue
-        zone = classify_parking(tags)
-        output["parking"].append({
-            "id": el["id"],
-            "name": tags.get("name", ""),
-            "coords": coords,
-            "zone": zone,
-            "cs2": CS2_LABELS[f"prk_{zone}"],
-        })
-
+    # 5. Office (dedup against commercial via seen_ids)
     for el in raw["office"]:
-        if el["id"] in commercial_ids:
-            continue  # deduplicate office areas already captured as commercial
-        tags = el.get("tags") or {}
-        coords = extract_coords(el)
-        if not coords:
-            skipped += 1
-            continue
-        output["office"].append({
-            "id": el["id"],
-            "name": tags.get("name", ""),
-            "coords": coords,
-            "zone": "office",
-            "cs2": CS2_LABELS["office"],
-        })
+        suffix = classify_office(el.get("tags") or {})
+        add(el, f"office_{suffix}")
 
-    for el in raw["mixed"]:
-        tags = el.get("tags") or {}
-        coords = extract_coords(el)
-        if not coords:
-            skipped += 1
-            continue
-        output["mixed"].append({
-            "id": el["id"],
-            "name": tags.get("name", ""),
-            "coords": coords,
-            "zone": "mixed",
-            "cs2": CS2_LABELS["mixed"],
-        })
+    # 6. Industrial
+    for el in raw["industrial"]:
+        add(el, "industrial")
+
+    # 7. Parking
+    for el in raw["parking"]:
+        suffix = classify_parking(el.get("tags") or {})
+        add(el, f"prk_{suffix}")
 
     # ── Summary ───────────────────────────────────────────────────────────────
     total = sum(len(v) for v in output.values())
-    res = output["residential"]
-    print(f"\n  Residential  high/med/low : "
-          f"{sum(1 for r in res if r['zone']=='high')} / "
-          f"{sum(1 for r in res if r['zone']=='medium')} / "
-          f"{sum(1 for r in res if r['zone']=='low')}")
-    com = output["commercial"]
-    print(f"  Commercial   high/low     : "
-          f"{sum(1 for c in com if c['zone']=='high')} / "
-          f"{sum(1 for c in com if c['zone']=='low')}")
-    for cat in ["industrial", "retail", "parking", "office", "mixed"]:
-        print(f"  {cat:<12}             : {len(output[cat])}")
-    print(f"  Skipped (no geometry)     : {skipped}")
-    print(f"  TOTAL                     : {total}")
+    print()
+    for key in CS2_LABELS:
+        print(f"  {key:<16}: {len(output[key]):>6}  ({CS2_LABELS[key]})")
+    print(f"  {'skipped':<16}: {skipped:>6}")
+    print(f"  {'TOTAL':<16}: {total:>6}")
 
     # ── Write output ──────────────────────────────────────────────────────────
     ts = datetime.now(timezone.utc).isoformat()
     lines = [
-        f"// Auto-generated by extract_zoning.py — {ts}",
-        f"// Minneapolis Zoning v1.0 — bbox: {bbox}",
+        f"// Auto-generated by extract_zoning.py v3.0 — {ts}",
+        f"// Minneapolis Zoning — bbox: {bbox}",
+        f"// CS2-aligned model: 13 zones (6 res + 2 com + 2 office + 1 ind + 2 prk)",
         f"// Total polygons: {total}",
         "",
     ]
-    for cat in CATEGORIES:
-        var = f"DATA_{cat.upper()}"
-        lines.append(f"const {var} = {json.dumps(output[cat])};")
+    for key in CS2_LABELS:
+        var = f"DATA_{key.upper()}"
+        lines.append(f"const {var} = {json.dumps(output[key])};")
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("\n".join(lines), encoding="utf-8")
