@@ -31,6 +31,9 @@ only-include = [
     "cs2_zones.py",
     "extract_zoning.py",
     "extract_msbuildings.py",
+    "extract_vial.py",
     "overpass_client.py",
     "patch_colors.py",
+    "vial_classifiers.py",
+    "vial_zones.py",
 ]
