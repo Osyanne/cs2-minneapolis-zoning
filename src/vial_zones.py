@@ -34,7 +34,8 @@ def build_vial_query(bbox: str) -> str:
     Construir una query Overpass QL que devuelve todos los ways con tag
     highway en {motorway, trunk, primary, secondary, tertiary, residential,
     unclassified, living_street, service, pedestrian, footway, path, steps,
-    cycleway} (incluyendo variantes _link para las 4 primeras), con geometría.
+    cycleway} (incluyendo variantes _link para motorway/trunk/primary/
+    secondary/tertiary), con geometría.
     """
     highway_regex = (
         "motorway|motorway_link|trunk|trunk_link|"
