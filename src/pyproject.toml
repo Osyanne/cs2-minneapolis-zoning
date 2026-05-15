@@ -1,7 +1,7 @@
 [project]
-name = "cs2-minneapolis-zoning"
-version = "2.0.0"
-description = "GIS pipeline: extract OpenStreetMap data for Cities Skylines 2"
+name = "cs2-minneapolis-osm-toolkit"
+version = "3.1.0"
+description = "GIS toolkit modular: extract OpenStreetMap data for Cities: Skylines 2"
 requires-python = ">=3.11"
 dependencies = [
     "requests>=2.31.0",
@@ -9,31 +9,20 @@ dependencies = [
     "shapely>=2.0.0",
 ]
 
-# Dependencias para `uv run pytest`
 [dependency-groups]
 dev = [
     "pytest>=7.0.0",
 ]
 
-# Entry point único — el resto (vial, services, transport) se añadirán en sesiones futuras
+# Entry points por módulo
 [project.scripts]
-extract-zoning = "extract_zoning:main"
-extract-vial = "extract_vial:main"
+extract-zoning = "zoning.extract:main"
+extract-vial   = "vial.extract:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-# Hatchling necesita saber qué archivos empaquetar (los .py están sueltos en src/, no en un paquete)
+# Layout de sub-packages — hatchling empaqueta los directorios completos
 [tool.hatch.build.targets.wheel]
-only-include = [
-    "classifiers.py",
-    "cs2_zones.py",
-    "extract_zoning.py",
-    "extract_msbuildings.py",
-    "extract_vial.py",
-    "overpass_client.py",
-    "patch_colors.py",
-    "vial_classifiers.py",
-    "vial_zones.py",
-]
+packages = ["shared", "zoning", "vial"]
