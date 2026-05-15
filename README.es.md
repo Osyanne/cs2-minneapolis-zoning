@@ -10,6 +10,17 @@
 
 > 🇬🇧 English version: [README.md](README.md)
 
+## Preview
+
+![Mineapolis completa a zoom 12](docs/screenshots/preview_full.png)
+*Vista completa de Mineapolis a zoom 12 — silueta de la ciudad con todas las familias de zonas*
+
+![Downtown a zoom 15](docs/screenshots/preview_downtown.png)
+*Downtown a zoom 15 — alta densidad comercial (azul), oficinas (morado), río Mississippi*
+
+![Uptown a zoom 15](docs/screenshots/preview_uptown.png)
+*Uptown / Bde Maka Ska a zoom 15 — grid residencial con corredores comerciales*
+
 ## Qué hace
 
 Extrae polígonos de zonificación reales desde OpenStreetMap (via Overpass API), los clasifica en **los 11 tipos de zona oficiales de Cities: Skylines 2** y los renderiza en un mapa interactivo dark-mode que puedes usar como referencia mientras construyes tu ciudad CS2.

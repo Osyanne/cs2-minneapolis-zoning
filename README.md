@@ -26,7 +26,17 @@ No API keys. No paid services. No PostGIS. Just Python + a single HTML file.
 
 ## Preview
 
-![Map preview](docs/screenshots/preview_full.png)
+![Full Minneapolis at zoom 12 — city silhouette with all zone families visible](docs/screenshots/preview_full.png)
+
+*Full Minneapolis at zoom 12 — block-level zoning visible across the whole city*
+
+![Downtown at zoom 15 — mixed zoning detail](docs/screenshots/preview_downtown.png)
+
+*Downtown at zoom 15 — high-density commercial (blue) + offices (purple) + Mississippi River*
+
+![Uptown at zoom 15 — residential grid](docs/screenshots/preview_uptown.png)
+
+*Uptown / Bde Maka Ska area at zoom 15 — residential grid with commercial corridors along Hennepin & Lyndale*
 
 The default extract covers Minneapolis with **81,732 polygons** across 13 categories: 6 residential subtypes + 2 commercial + 2 office + 1 industrial + 2 parking.
 
