@@ -1,8 +1,8 @@
 """Tests de sanidad para los builders de queries Overpass (Sesión 1.6)."""
 import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-from cs2_zones import build_queries, CS2_LABELS
+from zoning.zones import build_queries, CS2_LABELS
 
 BBOX = "44.86,-93.38,45.05,-93.17"
 

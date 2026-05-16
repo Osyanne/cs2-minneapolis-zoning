@@ -3,9 +3,9 @@ Tests para classifiers.py — Sesión 1.6 (CS2-aligned model).
 Ejecutar con: cd src && uv run pytest ../tests/test_classifiers.py -v
 """
 import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-from classifiers import (
+from zoning.classifiers import (
     classify_apartment,
     classify_residential_subtype,
     classify_landuse_residential,
