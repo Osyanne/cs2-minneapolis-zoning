@@ -921,6 +921,150 @@ async function loadFromPrebuilt() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// MODULE PILLS + MASTER TOGGLES + FONDO CONTROL (post-Sesión 2 refactor)
+// ══════════════════════════════════════════════════════════════════════════════
+
+const MODULES = {
+  zoning: {
+    label: "Zoning",
+    enabled: true,
+    layerGroupsRef: () => Object.values(groups),
+  },
+  vial: {
+    label: "Vial",
+    enabled: true,
+    layerGroupsRef: () => Object.values(vialGroups),
+  },
+  servicios: { label: "Servicios", enabled: false, layerGroupsRef: () => [] },
+  transporte: { label: "Transporte", enabled: false, layerGroupsRef: () => [] },
+};
+
+// State persistido en localStorage
+const VIEW_STATE_KEY = "cs2-mineapolis-view-state-v1";
+
+function readViewState() {
+  try {
+    const raw = localStorage.getItem(VIEW_STATE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
+function writeViewState(state) {
+  try {
+    localStorage.setItem(VIEW_STATE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.warn("[view-state] no se pudo guardar:", e.message);
+  }
+}
+
+// Estado inicial: cargar de localStorage, fallback a default (todo enabled = "on")
+const savedState = readViewState();
+const moduleStates = {};
+for (const key of Object.keys(MODULES)) {
+  if (savedState && savedState.pills && savedState.pills[key]) {
+    moduleStates[key] = savedState.pills[key];
+  } else {
+    moduleStates[key] = MODULES[key].enabled ? "on" : "off";
+  }
+}
+let fondoMode = (savedState && savedState.fondo) || "hidden";
+
+// Helper recursivo: aplica setStyle a TODOS los polygons/polylines descendientes
+// de un layerGroup, incluyendo sub-grupos anidados (zonas tier-based de Sesión 1.7
+// tienen estructura groups[key] → [tieredLarge[key], tieredSmall[key]] → polígonos)
+function eachPolygonDeep(layer, fn) {
+  if (typeof layer.setStyle === "function" && typeof layer.eachLayer !== "function") {
+    fn(layer);
+  } else if (typeof layer.eachLayer === "function") {
+    layer.eachLayer(sub => eachPolygonDeep(sub, fn));
+  }
+}
+
+// Aplica el estado actual al DOM y al mapa
+function applyModuleState(moduleKey) {
+  const state = moduleStates[moduleKey];
+  const module = MODULES[moduleKey];
+  if (!module.enabled) return;
+
+  const layers = module.layerGroupsRef();
+
+  if (state === "on" || fondoMode === "full") {
+    for (const lg of layers) {
+      if (!map.hasLayer(lg)) map.addLayer(lg);
+      eachPolygonDeep(lg, p => p.setStyle({ opacity: 0.9, fillOpacity: 0.55 }));
+    }
+  } else if (state === "off" && fondoMode === "faded") {
+    for (const lg of layers) {
+      if (!map.hasLayer(lg)) map.addLayer(lg);
+      eachPolygonDeep(lg, p => p.setStyle({ opacity: 0.3, fillOpacity: 0.15 }));
+    }
+  } else {
+    // state === "off" && fondoMode === "hidden"
+    for (const lg of layers) {
+      if (map.hasLayer(lg)) map.removeLayer(lg);
+    }
+  }
+}
+
+function applyAllStates() {
+  for (const key of Object.keys(MODULES)) {
+    applyModuleState(key);
+  }
+}
+
+function syncUI() {
+  for (const pill of document.querySelectorAll(".pill")) {
+    const key = pill.dataset.module;
+    if (!MODULES[key]) continue;
+    pill.classList.toggle("on", moduleStates[key] === "on");
+  }
+  for (const mt of document.querySelectorAll(".master-toggle")) {
+    const key = mt.dataset.module;
+    if (!MODULES[key]) continue;
+    mt.classList.toggle("on", moduleStates[key] === "on");
+  }
+  const anyOff = Object.keys(MODULES).some(
+    k => MODULES[k].enabled && moduleStates[k] === "off"
+  );
+  document.getElementById("fondo-control").classList.toggle("visible", anyOff);
+  document.getElementById("fondo-select").value = fondoMode;
+}
+
+function toggleModule(key) {
+  if (!MODULES[key] || !MODULES[key].enabled) return;
+  moduleStates[key] = moduleStates[key] === "on" ? "off" : "on";
+  applyModuleState(key);
+  syncUI();
+  writeViewState({ pills: moduleStates, fondo: fondoMode });
+}
+
+function setFondo(mode) {
+  fondoMode = mode;
+  applyAllStates();
+  syncUI();
+  writeViewState({ pills: moduleStates, fondo: fondoMode });
+}
+
+function wireUpModuleControls() {
+  for (const pill of document.querySelectorAll(".pill")) {
+    pill.addEventListener("click", () => {
+      const key = pill.dataset.module;
+      toggleModule(key);
+    });
+  }
+  for (const mt of document.querySelectorAll(".master-toggle")) {
+    mt.addEventListener("click", () => {
+      const key = mt.dataset.module;
+      toggleModule(key);
+    });
+  }
+  document.getElementById("fondo-select").addEventListener("change", e => {
+    setFondo(e.target.value);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // MAIN LOADER
 // ══════════════════════════════════════════════════════════════════════════════
 async function loadAll() {
@@ -1105,7 +1249,11 @@ function updateLegendCounts() {
 // ══════════════════════════════════════════════════════════════════════════════
 // GO
 // ══════════════════════════════════════════════════════════════════════════════
-loadAll();
+loadAll().then(() => {
+  wireUpModuleControls();
+  applyAllStates();
+  syncUI();
+});
 </script>
 </body>
 </html>
