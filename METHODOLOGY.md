@@ -1,8 +1,8 @@
-# Methodology — CS2 Minneapolis Zoning Pipeline
+# Methodology — CS2 Minneapolis OSM Toolkit
 
-Technical documentation for every design decision in this pipeline.
+Technical documentation for every design decision in this toolkit.
 
-> **Version 3.0** — This document covers the architecture as of Session 1.7 (May 2026). For the original v1.0 design, see git history.
+> **Version 3.1** — This document covers the architecture as of Session 2 (Road Network Module) + the post-Sesión 2 toolkit reorganization (sub-packages `shared/zoning/vial`, prebuilts via GitHub Releases, module pills UI). For the original v1.0 design, see git history.
 
 ---
 
@@ -209,7 +209,7 @@ At low zoom you see the city's silhouette (block-level zoning). At high zoom the
 
 ## 9. Prebuilt Data Mode (`datos_zonificacion.js`)
 
-When `extract_zoning.py` runs, it writes a single `.js` file with 13 arrays (one per CS2 zone) containing all classified polygons. The visualizer detects this file via a `<script>` tag with `onerror` fallback.
+When `extract-zoning` (entry point of `zoning/extract.py`) runs, it writes a single `.js` file with 13 arrays (one per CS2 zone) containing all classified polygons. The visualizer detects this file via a `<script>` tag with `onerror` fallback.
 
 **Three load paths in `index.html`:**
 
@@ -306,7 +306,7 @@ uv run --with pytest pytest ../tests/ -v
 ### Pipeline
 
 - **1 query Overpass** con regex sobre highway → todas las categorías en una pasada
-- `vial_classifiers.classify_highway(tags)` → lookup en dict puro
+- `vial.classifiers.classify_highway(tags)` → lookup en dict puro
 - `linestring_from_way(element)` → coords [[lat, lon], ...] (mínimo 2 puntos)
 - Output: `DATA_VIAL` bucketed por categoría + `DATA_VIAL_META`
 
