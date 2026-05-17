@@ -1,13 +1,9 @@
-# Generated data — los prebuilts JS se distribuyen via GitHub Releases, no en git
-# (post-refactor 2026-05-15: ver docs/specs/2026-05-15-toolkit-reorg-design.md)
-datos_zonificacion.js
-datos_vial.js
-datos_servicios.js
-visualizer/datos_zonificacion.js
-visualizer/datos_vial.js
-visualizer/datos_servicios.js
+# Featured Cities Pack (v3.3): los prebuilts viven en visualizer/cities/<slug>/
+# y SÍ se commitean (necesario para servirlos via GitHub Pages).
+# Los viejos datos_*.js en visualizer/ root eran legacy single-city y ya no existen.
+
+# Solo se ignora el legacy MS Buildings extra (no es parte de Featured Cities)
 visualizer/datos_msbuildings.js
-!data/sample_output.js
 
 # Backups locales y caches (no para el repo)
 .backup-*/

@@ -1,0 +1,17 @@
+{
+  "modules": {
+    "zoning": {
+      "hash": "16a354b0",
+      "features": 81825
+    },
+    "vial": {
+      "hash": "16b01e62",
+      "features": 108830
+    },
+    "services": {
+      "hash": "11d2d4cc",
+      "features": 2272
+    }
+  },
+  "generated_at": "2026-05-17T22:38:13.628502+00:00"
+}
