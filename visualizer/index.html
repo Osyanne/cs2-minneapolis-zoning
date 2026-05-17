@@ -921,6 +921,7 @@ function renderServicesFeatures() {
   }
 
   applyServicesZoomVisibility();
+  updateLegendCounts();
   return count;
 }
 
@@ -1059,7 +1060,11 @@ const MODULES = {
     enabled: true,
     layerGroupsRef: () => Object.values(vialGroups),
   },
-  servicios: { label: "Servicios", enabled: false, layerGroupsRef: () => [] },
+  servicios: {
+    label: "Servicios",
+    enabled: true,
+    layerGroupsRef: () => Object.values(serviceGroups),
+  },
   transporte: { label: "Transporte", enabled: false, layerGroupsRef: () => [] },
 };
 
@@ -1331,6 +1336,17 @@ for (const [key, v] of Object.entries(VIAL_TYPES)) {
               `margin-right:7px;vertical-align:middle"></span>`;
   overlayMap[dot + v.label] = vialGroups[key];
 }
+// Services overlays — separador visual + 5 capas (Sesión 3)
+const serviciosSep = `<span style="display:inline-block;width:100%;border-top:1px solid #2a2d3d;` +
+                     `margin:6px 0 4px;padding-top:4px;color:#666;font-size:10px;` +
+                     `text-transform:uppercase;letter-spacing:1px">Servicios</span>`;
+overlayMap[serviciosSep] = L.layerGroup();  // separador no-op
+for (const [key, s] of Object.entries(SERVICES_TYPES)) {
+  const dot = `<span style="display:inline-block;width:12px;height:12px;background:${s.color};` +
+              `color:white;text-align:center;line-height:12px;font-size:8px;font-weight:700;` +
+              `border-radius:50%;margin-right:7px;vertical-align:middle">${s.char}</span>`;
+  overlayMap[dot + s.label] = serviceGroups[key];
+}
 L.control.layers(null, overlayMap, { collapsed: true, position: "topright" }).addTo(map);
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1366,6 +1382,15 @@ legend.onAdd = () => {
       <span class="lcount zero" id="vcount-${key}">0</span>
     </div>`;
   }
+  // Sección Servicios (Sesión 3)
+  html += `<h4 style="margin-top:14px"><span class="master-toggle on" data-module="servicios" title="Toggle Servicios"></span>Servicios</h4>`;
+  for (const [key, s] of Object.entries(SERVICES_TYPES)) {
+    html += `<div class="li">
+      <div class="ldot" style="background:${s.color};color:white;font-size:8px;font-weight:700;text-align:center;line-height:10px;border-radius:50%">${s.char}</div>
+      <span class="lname">${s.label}</span>
+      <span class="lcount zero" id="scount-${key}">0</span>
+    </div>`;
+  }
   div.innerHTML = html;
   return div;
 };
@@ -1381,6 +1406,12 @@ function updateLegendCounts() {
   }
   for (const [key, n] of Object.entries(vialCounts)) {
     const el = document.getElementById("vcount-" + key);
+    if (!el) continue;
+    el.textContent = n.toLocaleString();
+    el.classList.toggle("zero", n === 0);
+  }
+  for (const [key, n] of Object.entries(serviceCounts)) {
+    const el = document.getElementById("scount-" + key);
     if (!el) continue;
     el.textContent = n.toLocaleString();
     el.classList.toggle("zero", n === 0);
