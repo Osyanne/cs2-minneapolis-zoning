@@ -78,3 +78,19 @@ def test_get_city_unknown_raises():
     cities = {"madison": _valid_entry()}
     with pytest.raises(CityNotFoundError, match="atlantis"):
         get_city(cities, "atlantis")
+
+
+def test_real_cities_json_loads_with_5_entries():
+    """Regression test: el cities.json del repo debe tener exactamente 5 entries válidas."""
+    repo_root = Path(__file__).resolve().parents[2]
+    p = repo_root / "cities.json"
+    cities = load_cities(p)
+    expected = {"minneapolis", "manhattan", "tokyo", "amsterdam", "madison"}
+    assert set(cities.keys()) == expected, f"Esperaba {expected}, got {set(cities.keys())}"
+
+
+def test_real_cities_json_minneapolis_bbox_unchanged():
+    """Regression: el bbox histórico de Mpls no debe cambiar (rompería prebuilts viejos)."""
+    repo_root = Path(__file__).resolve().parents[2]
+    cities = load_cities(repo_root / "cities.json")
+    assert cities["minneapolis"]["bbox"] == [44.86, -93.38, 45.05, -93.17]
