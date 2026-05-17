@@ -30,3 +30,6 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Superpowers brainstorming companion (local-only)
+.superpowers/
