@@ -1,122 +1,148 @@
 # Adapting This Pipeline to Other Cities
 
-This pipeline is city-agnostic. Any city with reasonable OpenStreetMap coverage can be processed in under 20 minutes. Here is a 5-step guide.
+This pipeline is city-agnostic. Any city with reasonable OpenStreetMap coverage can be processed in under 20 minutes. If you haven't set up Python and uv yet, start with [QUICKSTART.md](QUICKSTART.md) — it walks through the full install from zero.
 
 ---
 
-## Step 1: Get Your City's Bounding Box
+## Step 1: Find Your City's Bounding Box
 
-You need four coordinates in `south,west,north,east` format.
+You need four coordinates in `south,west,north,east` order — a rectangle that covers your city.
 
-**Option A — Nominatim (easiest):**
+**Option A — bboxfinder.com (easiest for beginners):**
 
-Search your city on [nominatim.openstreetmap.org](https://nominatim.openstreetmap.org/). The search result page shows a bounding box at the bottom, or you can use the API:
+Go to [bboxfinder.com](http://bboxfinder.com/), zoom to your city, and draw a rectangle. The coordinates appear at the bottom of the page in the correct format. Copy them.
 
-```
-https://nominatim.openstreetmap.org/search?q=Chicago,IL,USA&format=json&limit=1
-```
+**Option B — Nominatim:**
 
-The response includes `"boundingbox": ["south", "north", "west", "east"]` — reorder to `south,west,north,east` for Overpass QL.
+Search your city on [nominatim.openstreetmap.org](https://nominatim.openstreetmap.org/). The result page shows a bounding box, or use the API directly:
 
-**Option B — bbox-mcp-server (if you use AI tools):**
+    https://nominatim.openstreetmap.org/search?q=Chicago,IL,USA&format=json&limit=1
 
-If you have bbox-mcp-server installed, ask your AI assistant:
-> "What is the bounding box for Chicago, IL?"
+The response includes `"boundingbox": ["south", "north", "west", "east"]`. Note that Nominatim returns south, **north**, west, east — you need to reorder to south, **west**, north, east for these extractors.
 
-See [bbox-mcp-server.md](bbox-mcp-server.md) for setup instructions.
+**Option C — bbox-mcp-server (if you use AI tools):**
 
-**Option C — Manual from a map:**
+If you have the bbox-mcp-server set up, ask your AI assistant: "What is the bounding box for Chicago, IL?" See [bbox-mcp-server.md](bbox-mcp-server.md) for setup.
 
-Go to [bboxfinder.com](http://bboxfinder.com/) and draw a rectangle over your city. The coordinates are shown at the bottom in the correct format.
-
-**Examples:**
+**Example bboxes:**
 
 | City | Bounding Box |
 |------|--------------|
 | Minneapolis, MN | `44.86,-93.38,45.05,-93.17` |
+| Saint Paul, MN | `44.88,-93.20,45.03,-92.99` |
+| Madison, WI | `43.05,-89.50,43.15,-89.30` |
 | Chicago, IL | `41.64,-87.94,42.02,-87.52` |
 | Portland, OR | `45.43,-122.84,45.65,-122.47` |
 | Austin, TX | `30.10,-97.97,30.52,-97.56` |
 | Denver, CO | `39.61,-105.11,39.91,-104.60` |
+| Sacramento, CA | `38.50,-121.55,38.65,-121.45` |
+| Buenos Aires, AR | `-34.71,-58.55,-34.53,-58.34` |
+| Berlin, DE | `52.35,13.10,52.65,13.78` |
+| Tokyo (23 wards), JP | `35.53,139.55,35.82,139.92` |
+| Amsterdam, NL | `52.30,4.78,52.43,5.02` |
+
+Keep bboxes reasonably sized. A city's urban core (not the entire metro region) is usually the right scope. Very large bboxes will time out the Overpass API or produce files too large to be useful in the visualizer.
 
 ---
 
-## Step 2: Update the Bounding Box in the Code
+## Step 2: Run the Extractors
 
-Edit `src/cs2_zones.py` and replace the default bbox:
+Open a terminal inside the `src/` folder. If you haven't done `uv sync` yet, do that first.
 
-```python
-# Before
-MINNEAPOLIS_BBOX = "44.86,-93.38,45.05,-93.17"
+**Zoning (building polygons classified into CS2 zone types):**
 
-# After (example: Chicago)
-MINNEAPOLIS_BBOX = "41.64,-87.94,42.02,-87.52"
-```
+    uv run extract-zoning --bbox "south,west,north,east"
 
-Or pass it as a CLI argument without editing the file:
+This is the slowest extractor — 1–5 minutes depending on city size and how busy the Overpass servers are. It downloads building data and classifies each polygon into one of the 11 CS2 zone types.
 
-```bash
-uv run extract_zoning.py --bbox "41.64,-87.94,42.02,-87.52"
-```
+Output: `visualizer/datos_zonificacion.js`
 
----
+**Road network (roads classified into CS2 road categories):**
 
-## Step 3: Run the Extraction
+    uv run extract-vial --bbox "south,west,north,east"
 
-```bash
-cd src
-uv run extract_zoning.py
-```
+Usually under a minute. Classifies all OSM `highway=*` ways into the 6 CS2 road categories.
 
-The script will:
-1. Download `building:levels` data to build the density index (~30s)
-2. Download 7 zoning categories sequentially (~10-15 min total)
-3. Classify all polygons
-4. Write `../visualizer/datos_zonificacion.js`
+Output: `visualizer/datos_vial.js`
 
-Expected output size: 2-8 MB depending on city size and OSM coverage.
+**Services (hospitals, schools, fire stations, parks, police/admin):**
 
----
+    uv run extract-services --bbox "south,west,north,east"
 
-## Step 4: Open the Visualizer
+Usually under a minute. Returns points and polygons for 5 service buckets aligned to CS2's service tabs.
 
-Open `visualizer/index.html` in any modern browser. The map will center automatically on the data extent of your new city.
+Output: `visualizer/datos_servicios.js`
 
-If the map appears blank, check the browser console (F12) for errors. Most likely cause: the output file path doesn't match what index.html expects.
+You can run all three for the same bbox, or just the ones you need. The visualizer handles any combination.
+
+**Example for Madison, WI:**
+
+    uv run extract-zoning --bbox "43.05,-89.50,43.15,-89.30"
+    uv run extract-vial --bbox "43.05,-89.50,43.15,-89.30"
+    uv run extract-services --bbox "43.05,-89.50,43.15,-89.30"
 
 ---
 
-## Step 5: Calibrate Density Thresholds (if needed)
+## Step 3: Open the Visualizer
 
-Open your city's visualizer and compare it against Google Maps or local knowledge:
+Go to the `visualizer/` folder in your file explorer and double-click `index.html`. The map centers automatically on the extent of your data.
 
-- **Too much red (high density) in suburban areas?** Raise the `≥5` threshold to `≥7` or `≥10` in `src/classifiers.py`.
-- **Dense downtown showing as yellow (low density)?** Lower the `≥5` threshold to `≥3` or `≥4`.
-- **Entire city showing as low density?** Your city may have sparse `building:levels` data in OSM. Try using `residential_subtype` tags instead, or consult local OSM mapping communities.
-
-The thresholds in `classify_residential()` were calibrated for Minneapolis specifically. European cities tend to have higher density at lower floor counts; US Sun Belt cities tend to be more spread out.
-
-```python
-# src/classifiers.py — adjust these thresholds:
-if (effective_levels >= 5   # <-- change this for high density
-        or residential_subtype in ("apartments", "condominium", "condo")):
-    return "high"
-
-if (effective_levels >= 3   # <-- change this for medium density
-        or building_type in ("terrace", "dormitory", "townhouse")
-        ...):
-    return "medium"
-```
+If the map appears blank or shows an error, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 ---
 
-## OSM Coverage Considerations
+## Step 4: Calibrate Density Thresholds (if needed)
 
-The pipeline works best for cities with:
-- High OSM coverage (most North American and Western European cities)
-- `building:levels` tags on apartment buildings (common in OSM-active communities)
-- Standard `landuse=residential/commercial/industrial` tagging
+The density thresholds in the zoning classifier were tuned for Minneapolis. They may not be a perfect fit for your city.
 
-Cities with sparse OSM data will produce fewer polygons and less granular density classification. Contributing to OSM for your city before running the pipeline will improve results.
+Open your city's visualizer and compare against Google Maps or local knowledge. Look at areas you know well:
 
-Check your city's OSM coverage at [osmstats.neis-one.org](https://osmstats.neis-one.org/).
+- **Too much high-density (red) in suburban areas?** The `building:levels` threshold is too low. Raise it in `src/zoning/classifiers.py`.
+- **Dense downtown showing as low-density (green)?** Lower the high-density threshold.
+- **Everything classified as low-density?** Your city likely has sparse `building:levels` data in OSM. See the coverage section below.
+
+The relevant thresholds are in `src/zoning/classifiers.py` in the `classify_residential()` function:
+
+    if (effective_levels >= 5   # raise or lower for high density
+            or residential_subtype in ("apartments", "condominium", "condo")):
+        return "high"
+
+    if (effective_levels >= 3   # raise or lower for medium density
+            or building_type in ("terrace", "dormitory", "townhouse")
+            ...):
+        return "medium"
+
+**For European cities:** residential buildings tend to be denser at lower floor counts than US cities. You may get better results lowering these thresholds by 1–2 floors. A 4-floor Paris apartment block should probably classify as high density, not medium.
+
+**For US Sun Belt cities:** low `building:levels` coverage is common even in dense areas. If most buildings are coming out as low-density, check OSM coverage first before adjusting thresholds.
+
+---
+
+## OSM Coverage Gaps Will Affect Your Output
+
+This is worth being upfront about. OSM is a volunteer-built map, and coverage varies significantly by region.
+
+The toolkit works best for cities where contributors have mapped:
+- Building footprints with `building:levels` tags (for density classification)
+- `landuse=residential/commercial/industrial` polygons (for broad zone classification)
+- Amenity and facility tags (`amenity=hospital`, `leisure=park`, etc.) for services
+
+Cities with strong OSM communities — most of North America, Western Europe, Japan, Australia — usually produce good results. Cities with sparser coverage may produce fewer polygons and coarser classification.
+
+Longfellow and some inner-ring Minneapolis neighborhoods are a good example: even with good US city coverage, some blocks have missing `building:levels` data, which causes those buildings to fall through to low-density classification even when they're clearly not.
+
+**Check your city's coverage** at [osmstats.neis-one.org](https://osmstats.neis-one.org/). If the edit and contributor counts are low, expect sparse output.
+
+The best fix is contributing to OSM for your area — it improves the map for everyone, not just this tool. The OSM wiki has tutorials for beginners.
+
+---
+
+## A Note on Zoning vs. Land Use
+
+This toolkit classifies buildings using OSM land use tags and building attributes, not actual municipal zoning data. These are related but not the same thing. What OSM tags as "residential" matches what CS2 calls residential zone, but the exact density breakdown is an approximation based on floor counts and building types — not a direct read from your city's zoning code. For a reference layer while building in CS2, this is accurate enough. For anything requiring legal zoning data, consult your municipality's GIS portal.
+
+---
+
+## Common Errors
+
+See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for fixes for Overpass timeouts, empty output, uv errors, and visualizer issues.
