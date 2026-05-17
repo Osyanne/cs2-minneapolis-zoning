@@ -43,12 +43,6 @@ def test_services_chars_are_unique():
     assert len(chars) == len(set(chars)), f"chars duplicados: {chars}"
 
 
-def test_bbox_reexport_matches_vial():
-    from services.zones import MINNEAPOLIS_BBOX
-    from vial.zones import MINNEAPOLIS_BBOX as VIAL_BBOX
-    assert MINNEAPOLIS_BBOX == VIAL_BBOX
-
-
 def test_build_services_query_contains_bbox():
     from services.zones import build_services_query
     q = build_services_query(BBOX)

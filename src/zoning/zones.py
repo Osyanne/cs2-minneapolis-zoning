@@ -40,10 +40,6 @@ CS2_LABELS = {
     "prk_ramp":      "Parking Structure",
 }
 
-# Bounding box format: "south,west,north,east"
-MINNEAPOLIS_BBOX = "44.86,-93.38,45.05,-93.17"
-
-
 def build_queries(bbox: str) -> dict:
     """
     Construir queries Overpass QL para las 7 categorías source.

@@ -38,7 +38,7 @@ from zoning.classifiers import (
     classify_parking,
     polygon_area_m2,
 )
-from zoning.zones import CS2_LABELS, MINNEAPOLIS_BBOX, build_queries
+from zoning.zones import CS2_LABELS, build_queries
 
 
 # ── Geometry helpers ─────────────────────────────────────────────────────────

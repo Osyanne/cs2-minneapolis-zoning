@@ -33,10 +33,6 @@ SERVICES_COLORS = {
     "parks":     {"color": "#43A047", "char": "P"},
 }
 
-# Reexport — pipelines de zoning, vial y services comparten bbox
-MINNEAPOLIS_BBOX = "44.86,-93.38,45.05,-93.17"
-
-
 def build_services_query(bbox: str) -> str:
     """
     Construir una query Overpass QL que devuelve todos los servicios en los

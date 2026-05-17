@@ -34,7 +34,7 @@ from pathlib import Path
 from shared.overpass_client import query_with_retry
 from shared.registry import load_cities, get_city, CityNotFoundError, save_manifest_entry
 from services.classifiers import classify_service, infer_geometry_kind
-from services.zones import SERVICES_LABELS, MINNEAPOLIS_BBOX, build_services_query
+from services.zones import SERVICES_LABELS, build_services_query
 
 
 # ── City resolution ──────────────────────────────────────────────────────────

@@ -33,7 +33,7 @@ from pathlib import Path
 from shared.overpass_client import query_with_retry
 from shared.registry import load_cities, get_city, CityNotFoundError, save_manifest_entry
 from vial.classifiers import classify_highway
-from vial.zones import VIAL_LABELS, MINNEAPOLIS_BBOX, build_vial_query
+from vial.zones import VIAL_LABELS, build_vial_query
 
 
 # ── Geometry helpers ─────────────────────────────────────────────────────────

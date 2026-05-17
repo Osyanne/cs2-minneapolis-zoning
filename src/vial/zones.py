@@ -25,10 +25,6 @@ VIAL_LABELS = {
     "bike":       "Bike Lane",
 }
 
-# Reexport para no duplicar — los pipelines viales y de zonificación comparten bbox
-MINNEAPOLIS_BBOX = "44.86,-93.38,45.05,-93.17"
-
-
 def build_vial_query(bbox: str) -> str:
     """
     Construir una query Overpass QL que devuelve todos los ways con tag
