@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CS2 OSM Toolkit — Cargando…</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #0a0d1a; font-family: 'Segoe UI', system-ui, sans-serif; }
+    #map { height: 100vh; }
+
+    /* ══ LOADING OVERLAY ══════════════════════════════════════════════════════ */
+    #loading {
+      position: fixed; inset: 0; z-index: 10000;
+      background: #0a0d1a;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 6px;
+    }
+    #loading .logo {
+      font-size: 2.2em; font-weight: 700; letter-spacing: 1px;
+      color: #8BC34A; margin-bottom: 4px;
+    }
+    #loading .sub { color: #555; font-size: 0.88em; margin-bottom: 24px; }
+    #pgrid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 6px; width: 520px;
+    }
+    .pi {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-left: 3px solid #1e2235;
+      border-radius: 7px; padding: 9px 13px;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.81em; color: #aaa;
+      transition: all 0.25s;
+    }
+    .pi.loading { border-left-color: #FFC107; color: #ddd; background: rgba(255,193,7,0.06); }
+    .pi.done    { border-left-color: #4CAF50; color: #ccc; background: rgba(76,175,80,0.06); }
+    .pi.error   { border-left-color: #ef5350; color: #ccc; background: rgba(239,83,80,0.06); }
+    .pbadge {
+      font-size: 0.78em; padding: 2px 9px; border-radius: 20px;
+      background: rgba(255,255,255,0.05); color: #666; white-space: nowrap;
+    }
+    .pi.loading .pbadge { background: rgba(255,193,7,0.15); color: #FFC107; }
+    .pi.done    .pbadge { background: rgba(76,175,80,0.15);  color: #4CAF50; }
+    .pi.error   .pbadge { background: rgba(239,83,80,0.15);  color: #ef5350; }
+    #totbar { margin-top: 16px; font-size: 0.8em; color: #444; }
+    #totbar b { color: #8BC34A; font-weight: 700; }
+    #errmsg {
+      margin-top: 12px; font-size: 0.75em; color: #444;
+      max-width: 520px; text-align: center; line-height: 1.5; display: none;
+    }
+
+    /* ══ LEGEND ═══════════════════════════════════════════════════════════════ */
+    .legend {
+      background: rgba(10,13,26,0.93);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 9px; padding: 13px 16px;
+      color: #ccc; font-size: 11.5px;
+      backdrop-filter: blur(8px);
+      max-height: 82vh; overflow-y: auto;
+      scrollbar-width: thin; scrollbar-color: #2a2d3d transparent;
+    }
+    .legend::-webkit-scrollbar { width: 4px; }
+    .legend::-webkit-scrollbar-thumb { background: #2a2d3d; border-radius: 4px; }
+    .legend h4 { font-size: 12px; color: #8BC34A; font-weight: 600;
+                 letter-spacing: 0.6px; margin-bottom: 10px; }
+    .lsect { font-size: 9.5px; text-transform: uppercase; letter-spacing: 1.2px;
+             color: #3a3d50; margin: 9px 0 4px; }
+    .li { display: flex; align-items: center; gap: 8px; line-height: 2; }
+    .ldot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+    .lname { flex: 1; }
+    .lcount {
+      font-size: 10.5px; padding: 1px 7px; border-radius: 10px;
+      background: rgba(255,255,255,0.06); color: #888;
+      font-variant-numeric: tabular-nums; min-width: 28px; text-align: right;
+    }
+    .lcount.zero { color: #444; background: rgba(255,255,255,0.03); }
+
+    /* ══ LEAFLET DARK OVERRIDES ═══════════════════════════════════════════════ */
+    .leaflet-control-zoom a,
+    .leaflet-control-layers-toggle {
+      background-color: rgba(10,13,26,0.9) !important;
+      color: #aaa !important;
+      border-color: rgba(255,255,255,0.08) !important;
+    }
+    .leaflet-control-zoom a:hover { color: #8BC34A !important; }
+    .leaflet-control-layers {
+      background: rgba(10,13,26,0.93) !important;
+      border: 1px solid rgba(255,255,255,0.07) !important;
+      border-radius: 9px !important; color: #ccc !important;
+      font-size: 11.5px !important;
+    }
+    .leaflet-control-layers label { color: #ccc !important; }
+    .leaflet-control-layers-separator { border-color: rgba(255,255,255,0.08) !important; }
+    /* Bug #2 fix: limitar altura del control de capas expandido para no tapar leyenda */
+    .leaflet-control-layers-expanded {
+      max-height: 70vh !important;
+      overflow-y: auto !important;
+      scrollbar-width: thin;
+      scrollbar-color: #2a2d3d transparent;
+    }
+    .leaflet-control-layers-expanded::-webkit-scrollbar { width: 5px; }
+    .leaflet-control-layers-expanded::-webkit-scrollbar-thumb {
+      background: #2a2d3d; border-radius: 4px;
+    }
+    .leaflet-popup-content-wrapper {
+      background: rgba(10,13,26,0.95) !important;
+      color: #ddd !important; border: 1px solid rgba(255,255,255,0.08) !important;
+      border-radius: 8px !important; box-shadow: 0 4px 20px rgba(0,0,0,0.6) !important;
+    }
+    .leaflet-popup-tip { background: rgba(10,13,26,0.95) !important; }
+    .leaflet-popup-close-button { color: #666 !important; }
+
+    /* ══ STATUS BAR ═══════════════════════════════════════════════════════════ */
+    #statusbar {
+      position: fixed; bottom: 12px; left: 12px;
+      background: rgba(10,13,26,0.88); color: #555;
+      padding: 6px 14px; border-radius: 6px; font-size: 11px;
+      border: 1px solid rgba(255,255,255,0.06); display: none;
+    }
+    #statusbar b { color: #8BC34A; }
+
+    /* ══ TITLE ════════════════════════════════════════════════════════════════ */
+    #title-ctrl {
+      position: absolute; top: 14px; left: 56px; z-index: 500;
+      background: rgba(10,13,26,0.88); color: #8BC34A;
+      padding: 8px 16px; border-radius: 8px;
+      font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+      border: 1px solid rgba(139,195,74,0.2);
+      pointer-events: none;
+    }
+
+/* ══ MODULE PILLS (Header arriba) ═════════════════════════════════════════════ */
+#header-controls {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  z-index: 1000;
+  background: rgba(10,13,26,0.93);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 9px;
+  padding: 6px 10px;
+  backdrop-filter: blur(8px);
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #ccc;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s;
+}
+.pill:hover:not(.disabled) {
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.15);
+}
+.pill.on {
+  background: rgba(139, 195, 74, 0.18);
+  border-color: rgba(139, 195, 74, 0.4);
+  color: #C5E1A5;
+}
+.pill.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  background: transparent;
+  transition: background 0.15s;
+}
+.pill.on .pill-dot {
+  background: #8BC34A;
+  border-color: #8BC34A;
+  box-shadow: 0 0 6px rgba(139,195,74,0.5);
+}
+
+/* ══ FONDO CONTROL (dropdown a la derecha de las pills) ═════════════════════════ */
+#fondo-control {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #aaa;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255,255,255,0.08);
+}
+#fondo-control.visible { display: inline-flex; }
+#fondo-select {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: #ddd;
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* ══ MASTER TOGGLE EN LEYENDA (espejo de las pills) ══════════════════════════ */
+.legend h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.master-toggle {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid #555;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.master-toggle.on {
+  background: #8BC34A;
+  border-color: #8BC34A;
+  box-shadow: 0 0 6px rgba(139,195,74,0.4);
+}
+.master-toggle:hover {
+  border-color: #888;
+}
+  </style>
+</head>
+<body>
+
+<!-- Header — module pills + control de fondo (poblado dinámicamente por renderMap) -->
+<div id="header-controls">
+  <!-- Pills inyectadas dinámicamente según módulos del manifest -->
+  <div id="fondo-control">
+    <span>Fondo:</span>
+    <select id="fondo-select">
+      <option value="hidden">Oculto</option>
+      <option value="faded">Atenuado</option>
+      <option value="full">Completo</option>
+    </select>
+  </div>
+</div>
+
+<!-- Loading screen -->
+<div id="loading">
+  <div class="logo">🏙 CS2 OSM Toolkit</div>
+  <div class="sub" id="loading-sub">Cargando ciudad…</div>
+  <div id="pgrid"></div>
+  <div id="totbar">Polígonos cargados: <b id="tcnt">0</b></div>
+  <div id="errmsg"></div>
+</div>
+
+<div id="map"></div>
+<div id="title-ctrl">🗺 CS2 OSM Toolkit</div>
+<div id="statusbar"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// Multi-city bootstrap — lee ?city=<slug> de URL, fetch cities.json +
+// manifest.json, inyecta scripts de los módulos presentes solo.
+// ════════════════════════════════════════════════════════════════════════════
+
+const params = new URLSearchParams(window.location.search);
+const CITY_SLUG = params.get("city");
+
+if (!CITY_SLUG) {
+  // Sin parámetro → redirect a landing
+  window.location.replace("index.html");
+  throw new Error("no city slug, redirecting to landing");
+}
+
+let CITY_META = null;       // entry de cities.json
+let CITY_MANIFEST = null;   // manifest.json per-city
+
+async function bootstrap() {
+  try {
+    // 1. cities.json — deployado al lado de map.html por generate-landing
+    const citiesResp = await fetch("cities.json");
+    if (!citiesResp.ok) throw new Error(`cities.json not found (HTTP ${citiesResp.status})`);
+    const cities = await citiesResp.json();
+    if (!(CITY_SLUG in cities)) {
+      window.location.replace("index.html");
+      return;
+    }
+    CITY_META = cities[CITY_SLUG];
+
+    // Actualizar título de carga tan pronto como tenemos el nombre
+    document.getElementById("loading-sub").textContent =
+      `Cargando ${CITY_META.display_name}…`;
+
+    // 2. manifest.json — qué módulos hay generados para esta ciudad
+    const manifestResp = await fetch(`cities/${CITY_SLUG}/manifest.json`);
+    if (!manifestResp.ok) {
+      showError(`City data corrupted: manifest.json missing for "${CITY_SLUG}" (HTTP ${manifestResp.status})`);
+      return;
+    }
+    CITY_MANIFEST = await manifestResp.json();
+
+    // 3. Inyectar scripts SOLO para los módulos presentes en el manifest
+    const moduleToFile = {
+      zoning:   "datos_zonificacion.js",
+      vial:     "datos_vial.js",
+      services: "datos_servicios.js",
+    };
+    const modules = Object.keys(CITY_MANIFEST.modules || {});
+    if (modules.length === 0) {
+      showError(`No modules found in manifest for "${CITY_SLUG}"`);
+      return;
+    }
+    await Promise.all(modules.map(m => {
+      if (!(m in moduleToFile)) return Promise.resolve();  // módulo desconocido → ignorar
+      const hash = CITY_MANIFEST.modules[m].hash;
+      const src = `cities/${CITY_SLUG}/${moduleToFile[m]}?v=${hash}`;
+      return loadScript(src);
+    }));
+
+    // 4. Renderizar
+    renderMap();
+  } catch (e) {
+    showError(`Failed to load city "${CITY_SLUG}": ${e.message}`);
+  }
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error(`Failed to load ${src}`));
+    document.body.appendChild(s);
+  });
+}
+
+function showError(msg) {
+  document.body.innerHTML = `
+    <div style="padding: 2rem; font-family: sans-serif; color: #c9d1d9; background: #0d1117; min-height: 100vh;">
+      <h1 style="color:#ef5350;margin-bottom:1rem;">⚠ Error</h1>
+      <p style="margin-bottom:1rem;">${msg}</p>
+      <p>
+        <a href="index.html" style="color: #58a6ff;">← Volver a landing</a> &nbsp;·&nbsp;
+        <a href="https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/issues/new"
+           style="color: #58a6ff;" target="_blank">Report issue</a>
+      </p>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ZONE CONFIG — modelo CS2 oficial (Sesión 1.6, 2026-05-13)
+// Paleta basada en las 4 familias oficiales de CS2:
+//   verde (residencial) · azul (comercial) · morado (oficinas) · amarillo (industrial)
+// 13 zonas en total: 6 residencial + 2 comercial + 2 oficinas + 1 industrial + 2 parking
+// ════════════════════════════════════════════════════════════════════════════
+const ZONES = {
+  // Residencial (6) — gradiente verde de claro a oscuro
+  res_low_house: { color: "#A5D6A7", neon: "#C8E6C9", label: "Low Density Housing",          sect: "Residencial" },
+  res_row:       { color: "#9CCC65", neon: "#C5E1A5", label: "Medium Density Row Housing",   sect: "Residencial" },
+  res_med:       { color: "#66BB6A", neon: "#81C784", label: "Medium Density Housing",       sect: "Residencial" },
+  // Mixed Housing — teal (única excepción: refleja mezcla verde+azul)
+  res_mixed:     { color: "#26A69A", neon: "#4DB6AC", label: "Mixed Housing",                sect: "Residencial" },
+  res_low_rent:  { color: "#558B2F", neon: "#7CB342", label: "Low Rent Housing",             sect: "Residencial" },
+  res_high:      { color: "#1B5E20", neon: "#2E7D32", label: "High Density Housing",         sect: "Residencial" },
+  // Comercial (2) — azul medio vs azul oscuro
+  com_low:       { color: "#039BE5", neon: "#4FC3F7", label: "Low Density Business",         sect: "Comercial"   },
+  com_high:      { color: "#01579B", neon: "#0277BD", label: "High Density Business",        sect: "Comercial"   },
+  // Oficinas (2) — morado medio vs morado oscuro
+  office_low:    { color: "#9C27B0", neon: "#BA68C8", label: "Low Density Offices",          sect: "Oficinas"    },
+  office_high:   { color: "#4A148C", neon: "#6A1B9A", label: "High Density Offices",         sect: "Oficinas"    },
+  // Industrial (1) — amarillo dorado
+  industrial:    { color: "#F9A825", neon: "#FFCA28", label: "Industrial Manufacturing",     sect: "Industrial"  },
+  // Parking (2) — gris (referencia, no es zona CS2 técnicamente)
+  prk_surface:   { color: "#B0BEC5", neon: "#CFD8DC", label: "Surface Parking",              sect: "Parking"     },
+  prk_ramp:      { color: "#37474F", neon: "#607D8B", label: "Parking Structure",            sect: "Parking"     },
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// VIAL_TYPES — 6 categorías de red vial CS2 (Sesión 2, 2026-05-15)
+// ════════════════════════════════════════════════════════════════════════════
+const VIAL_TYPES = {
+  highway:    { label: "Highway",         color: "#EF5350", neon: "#FF8A80", weight: 3.5, sect: "Estructurales" },
+  major:      { label: "Major Road",      color: "#FFB74D", neon: "#FFCC80", weight: 2.5, sect: "Estructurales" },
+  minor:      { label: "Minor Road",      color: "#BCAAA4", neon: "#D7CCC8", weight: 1.4, sect: "Distribución" },
+  local:      { label: "Local Street",    color: "#78909C", neon: "#B0BEC5", weight: 0.8, sect: "Distribución" },
+  pedestrian: { label: "Pedestrian Path", color: "#26C6DA", neon: "#4DD0E1", weight: 0.6, sect: "No motorizado" },
+  bike:       { label: "Bike Lane",       color: "#66BB6A", neon: "#81C784", weight: 0.9, sect: "No motorizado" },
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// SERVICES_TYPES — 5 capas de servicios CS2 (Sesión 3, 2026-05-16)
+// ════════════════════════════════════════════════════════════════════════════
+const SERVICES_TYPES = {
+  health:    { label: "Atención sanitaria y funeraria", color: "#D81B60", char: "H" },
+  education: { label: "Educación e investigación",      color: "#FDD835", char: "E" },
+  fire:      { label: "Bomberos",                        color: "#E64A19", char: "B" },
+  admin:     { label: "Policía y administración",        color: "#1E88E5", char: "A" },
+  parks:     { label: "Parques",                         color: "#43A047", char: "P" },
+};
+
+const SERVICES_POINT_ZOOM_THRESHOLD = 12;  // markers ocultos en zoom < 12
+
+// ════════════════════════════════════════════════════════════════════════════
+// GEOMETRY — polyAreaM2: área aproximada en m² (proyección equirectangular)
+// Usada por renderPrebuilt para el tier-hiding de zonas residenciales/parking.
+// ════════════════════════════════════════════════════════════════════════════
+function polyAreaM2(ring) {
+  if (!ring || ring.length < 3) return 0;
+  const lat0 = ring.reduce((s, p) => s + p[0], 0) / ring.length;
+  const cosLat0 = Math.cos(lat0 * Math.PI / 180);
+  const MperDegLat = 111320;
+  const MperDegLon = 111320 * cosLat0;
+  const pts = ring.map(p => [p[1] * MperDegLon, p[0] * MperDegLat]);
+  let s = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const [x0, y0] = pts[i];
+    const [x1, y1] = pts[(i + 1) % pts.length];
+    s += x0 * y1 - x1 * y0;
+  }
+  return Math.abs(s) / 2;
+}
+
+// Anti-XSS: OSM names son contenido user-generated.
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// renderMap — inicializa Leaflet y renderiza módulos según manifest
+// ════════════════════════════════════════════════════════════════════════════
+function renderMap() {
+  // Bounds y centro desde el registro de la ciudad (no más hardcoded)
+  const [s, w, n, e] = CITY_META.bbox;
+  const BOUNDS = [[s, w], [n, e]];
+  const CENTER = CITY_META.center;
+  const ZOOM   = CITY_META.zoom;
+
+  // Actualizar title desde metadata
+  document.title = `CS2 OSM Toolkit — ${CITY_META.display_name}`;
+  const titleCtrl = document.getElementById("title-ctrl");
+  if (titleCtrl) titleCtrl.textContent = `🗺 ${CITY_META.display_name}`;
+
+  // Detectar qué módulos están disponibles (manifest + variable global presente)
+  const hasZoning   = !!(CITY_MANIFEST.modules?.zoning)   && typeof DATA_RES_LOW_HOUSE !== "undefined";
+  const hasVial     = !!(CITY_MANIFEST.modules?.vial)     && typeof DATA_VIAL           !== "undefined";
+  const hasServices = !!(CITY_MANIFEST.modules?.services) && typeof DATA_SERVICES_POLYGONS !== "undefined";
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // MAPA — Canvas renderer + dark tiles
+  // ══════════════════════════════════════════════════════════════════════════
+  const canvasRenderer = L.canvas({ padding: 0.2 });
+  const map = L.map("map", {
+    zoomControl: true,
+    preferCanvas: true,
+    renderer: canvasRenderer,
+  });
+  map.fitBounds(BOUNDS);
+
+  // Dark tile layer (CartoDB Dark Matter — no API key needed)
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    attribution: '© <a href="https://openstreetmap.org" style="color:#555">OSM</a> contributors © <a href="https://carto.com/attributions" style="color:#555">CARTO</a>',
+    subdomains: "abcd",
+    maxZoom: 20,
+  }).addTo(map);
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // TIER-BASED HIDING — large vs small polygons por zoom
+  // Algunas zonas tienen polígonos de dos escalas:
+  //   - "large" = bloques/manzanas (landuse=residential ≈ 50,000 m²)
+  //   - "small" = casas individuales (building=house ≈ 150 m²)
+  // Zoom bajo → solo large. Zoom ≥ 14 → también small.
+  // ══════════════════════════════════════════════════════════════════════════
+  const TIER_THRESHOLDS = {
+    res_low_house: 3000,
+    prk_surface:   3000,
+  };
+  const TIER_MIN_ZOOM = 14;
+
+  const tieredLarge = {};
+  const tieredSmall = {};
+
+  const groups = Object.fromEntries(
+    Object.keys(ZONES).map(k => {
+      if (TIER_THRESHOLDS[k] !== undefined) {
+        tieredLarge[k] = L.layerGroup();
+        tieredSmall[k] = L.layerGroup();
+        const mainGroup = L.layerGroup([tieredLarge[k], tieredSmall[k]]).addTo(map);
+        if (map.getZoom() < TIER_MIN_ZOOM) {
+          mainGroup.removeLayer(tieredSmall[k]);
+        }
+        return [k, mainGroup];
+      }
+      return [k, L.layerGroup().addTo(map)];
+    })
+  );
+
+  // VIAL layer groups — solo si módulo presente
+  const vialGroups = hasVial
+    ? Object.fromEntries(Object.keys(VIAL_TYPES).map(k => [k, L.layerGroup().addTo(map)]))
+    : {};
+  const vialCounts = Object.fromEntries(Object.keys(VIAL_TYPES).map(k => [k, 0]));
+
+  // SERVICES layer groups — solo si módulo presente
+  const serviceGroups = hasServices
+    ? Object.fromEntries(Object.keys(SERVICES_TYPES).map(k => [k, L.layerGroup().addTo(map)]))
+    : {};
+  const servicePointLayers = Object.fromEntries(Object.keys(SERVICES_TYPES).map(k => [k, []]));
+  const serviceCounts = Object.fromEntries(Object.keys(SERVICES_TYPES).map(k => [k, 0]));
+
+  function addPolygonToZone(zKey, polygon, areaM2) {
+    if (tieredSmall[zKey] !== undefined && areaM2 < TIER_THRESHOLDS[zKey]) {
+      tieredSmall[zKey].addLayer(polygon);
+    } else if (tieredLarge[zKey] !== undefined) {
+      tieredLarge[zKey].addLayer(polygon);
+    } else {
+      groups[zKey].addLayer(polygon);
+    }
+  }
+
+  // Auto-show/hide del sub-grupo "small" según zoom
+  map.on("zoomend", () => {
+    const z = map.getZoom();
+    for (const k of Object.keys(tieredSmall)) {
+      const onGroup = groups[k].hasLayer(tieredSmall[k]);
+      if (z >= TIER_MIN_ZOOM && !onGroup) groups[k].addLayer(tieredSmall[k]);
+      else if (z < TIER_MIN_ZOOM && onGroup) groups[k].removeLayer(tieredSmall[k]);
+    }
+    if (hasServices) applyServicesZoomVisibility();
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PROGRESS UI — una fila por módulo cargado
+  // ══════════════════════════════════════════════════════════════════════════
+  const pgrid = document.getElementById("pgrid");
+  const pitems = {};
+
+  function addProgressItem(key, label) {
+    const d = Object.assign(document.createElement("div"), { className: "pi", id: "pi-" + key });
+    d.innerHTML = `<span>${label}</span><span class="pbadge">Pendiente</span>`;
+    pgrid.appendChild(d);
+    pitems[key] = d;
+  }
+  function setP(key, state, text) {
+    if (!pitems[key]) return;
+    pitems[key].className = "pi " + state;
+    pitems[key].querySelector(".pbadge").textContent = text;
+  }
+
+  if (hasZoning)   addProgressItem("zoning",   "Zonificación");
+  if (hasVial)     addProgressItem("vial",      "Red Vial");
+  if (hasServices) addProgressItem("services",  "Servicios");
+
+  let total = 0;
+  function bump(n) {
+    total += n;
+    document.getElementById("tcnt").textContent = total.toLocaleString();
+  }
+
+  const zoneCounts = Object.fromEntries(Object.keys(ZONES).map(k => [k, 0]));
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ZONING RENDER — prebuilt datos_zonificacion.js
+  // Para cada cs2_key del modelo, accede su array DATA_*
+  // ══════════════════════════════════════════════════════════════════════════
+  const PREBUILT_DATASETS = {
+    res_low_house: () => typeof DATA_RES_LOW_HOUSE !== "undefined" ? DATA_RES_LOW_HOUSE : [],
+    res_row:       () => typeof DATA_RES_ROW       !== "undefined" ? DATA_RES_ROW       : [],
+    res_med:       () => typeof DATA_RES_MED       !== "undefined" ? DATA_RES_MED       : [],
+    res_mixed:     () => typeof DATA_RES_MIXED     !== "undefined" ? DATA_RES_MIXED     : [],
+    res_low_rent:  () => typeof DATA_RES_LOW_RENT  !== "undefined" ? DATA_RES_LOW_RENT  : [],
+    res_high:      () => typeof DATA_RES_HIGH      !== "undefined" ? DATA_RES_HIGH      : [],
+    com_low:       () => typeof DATA_COM_LOW       !== "undefined" ? DATA_COM_LOW       : [],
+    com_high:      () => typeof DATA_COM_HIGH      !== "undefined" ? DATA_COM_HIGH      : [],
+    office_low:    () => typeof DATA_OFFICE_LOW    !== "undefined" ? DATA_OFFICE_LOW    : [],
+    office_high:   () => typeof DATA_OFFICE_HIGH   !== "undefined" ? DATA_OFFICE_HIGH   : [],
+    industrial:    () => typeof DATA_INDUSTRIAL    !== "undefined" ? DATA_INDUSTRIAL    : [],
+    prk_surface:   () => typeof DATA_PRK_SURFACE   !== "undefined" ? DATA_PRK_SURFACE   : [],
+    prk_ramp:      () => typeof DATA_PRK_RAMP      !== "undefined" ? DATA_PRK_RAMP      : [],
+  };
+
+  function renderPrebuilt(zKey, items) {
+    let count = 0;
+    const zone = ZONES[zKey];
+    if (!zone) return 0;
+    const isTiered = tieredSmall[zKey] !== undefined;
+    for (const item of items) {
+      if (!item.coords || item.coords.length < 3) continue;
+
+      const popup =
+        `<div style="min-width:160px">` +
+        `<b style="color:#ddd;font-size:13px">${item.name || "Sin nombre"}</b><br>` +
+        `<span style="display:inline-block;width:10px;height:10px;background:${zone.neon};` +
+        `border-radius:2px;margin-right:5px;vertical-align:middle"></span>` +
+        `<span style="color:${zone.neon};font-size:11px">${zone.label}</span><br>` +
+        `<span style="color:#555;font-size:10px">OSM id ${item.id}</span></div>`;
+
+      const poly = L.polygon(item.coords, {
+        color: zone.neon, fillColor: zone.color,
+        weight: 0.7, opacity: 0.9, fillOpacity: 0.55,
+      }).bindPopup(popup, { maxWidth: 260 });
+      const areaM2 = isTiered ? polyAreaM2(item.coords) : 0;
+      addPolygonToZone(zKey, poly, areaM2);
+      zoneCounts[zKey]++;
+      count++;
+    }
+    return count;
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // VIAL RENDER — chunked async para no bloquear el browser (108k+ features)
+  // bridge=yes → weight +0.5 para diferenciar visualmente puentes.
+  // ══════════════════════════════════════════════════════════════════════════
+  async function renderVialFeatures() {
+    const CHUNK = 5000;
+    const pending = [];
+    for (const [key, features] of Object.entries(DATA_VIAL)) {
+      if (!VIAL_TYPES[key]) continue;
+      for (const f of features) pending.push([key, f]);
+    }
+
+    let count = 0;
+    for (let i = 0; i < pending.length; i += CHUNK) {
+      const batch = pending.slice(i, i + CHUNK);
+      for (const [key, f] of batch) {
+        const meta = VIAL_TYPES[key];
+        const w = f.bridge ? meta.weight + 0.5 : meta.weight;
+        const line = L.polyline(f.coords, {
+          color: meta.neon,
+          weight: w,
+          opacity: 0.85,
+          lineCap: "round",
+          lineJoin: "round",
+        });
+        if (f.name) {
+          const safeName = escHtml(f.name);
+          line.bindPopup(
+            `<div style="min-width:140px">` +
+            `<b style="color:#ddd;font-size:12px">${safeName}</b><br>` +
+            `<span style="color:${meta.neon};font-size:11px">${meta.label}</span>` +
+            (f.bridge ? `<br><span style="color:#888;font-size:10px">puente</span>` : "") +
+            `</div>`,
+            { maxWidth: 240 }
+          );
+        }
+        vialGroups[key].addLayer(line);
+        vialCounts[key]++;
+        count++;
+      }
+      // Yield al browser entre batches para no congelar el paint
+      await new Promise(r => setTimeout(r, 0));
+    }
+
+    updateLegendCounts();
+    return count;
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SERVICES RENDER — polígonos siempre visibles + markers char en círculo
+  // Markers visibles solo en zoom ≥ SERVICES_POINT_ZOOM_THRESHOLD.
+  // Chunked async: ~2000 polígonos en Minneapolis (mayormente parques).
+  // ══════════════════════════════════════════════════════════════════════════
+  function makeServiceIcon(type) {
+    return L.divIcon({
+      className: "service-marker",
+      html: `<div style="background:${type.color};color:white;border:2px solid rgba(255,255,255,0.7);` +
+            `border-radius:50%;width:22px;height:22px;display:flex;align-items:center;` +
+            `justify-content:center;font-weight:700;font-size:11px;font-family:sans-serif;` +
+            `box-shadow:0 1px 3px rgba(0,0,0,0.6);">${type.char}</div>`,
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
+      popupAnchor: [0, -11],
+    });
+  }
+
+  function buildServicePopup(feat, key) {
+    const type = SERVICES_TYPES[key];
+    const name = feat.name ? escHtml(feat.name) : "<em>(sin nombre)</em>";
+    const subtype = feat.subtype ? escHtml(feat.subtype) : "—";
+    const tagsHtml = Object.entries(feat.tags || {})
+      .map(([k, v]) => `<div><b>${escHtml(k)}</b>=${escHtml(String(v))}</div>`)
+      .join("");
+    return `<div style="font-size:12px;min-width:160px">` +
+           `<div style="font-weight:700;color:${type.color};margin-bottom:4px;">${name}</div>` +
+           `<div style="color:#888;margin-bottom:6px;">${escHtml(type.label)} · ${subtype}</div>` +
+           `<details><summary style="cursor:pointer;color:#888;font-size:11px">Tags OSM</summary>` +
+           `<div style="font-family:monospace;font-size:10px;margin-top:4px;color:#aaa">${tagsHtml}</div>` +
+           `</details></div>`;
+  }
+
+  async function renderServicesFeatures() {
+    if (typeof DATA_SERVICES_POLYGONS === "undefined" ||
+        typeof DATA_SERVICES_POINTS === "undefined") {
+      console.warn("[services] datos_servicios.js cargado pero sin constantes esperadas");
+      return 0;
+    }
+
+    const CHUNK = 250;
+    const sharedCanvas = L.canvas();
+
+    const pendingPoly = [];
+    for (const [key, features] of Object.entries(DATA_SERVICES_POLYGONS)) {
+      if (!SERVICES_TYPES[key]) continue;
+      for (const f of features) pendingPoly.push([key, f]);
+    }
+
+    let count = 0;
+    for (let i = 0; i < pendingPoly.length; i += CHUNK) {
+      const batch = pendingPoly.slice(i, i + CHUNK);
+      for (const [key, feat] of batch) {
+        const type = SERVICES_TYPES[key];
+        const poly = L.polygon(feat.coords, {
+          color: type.color,
+          weight: 1.5,
+          opacity: 0.9,
+          fillColor: type.color,
+          fillOpacity: 0.35,
+          renderer: sharedCanvas,
+        });
+        poly.bindPopup(buildServicePopup(feat, key), { maxWidth: 280 });
+        serviceGroups[key].addLayer(poly);
+        serviceCounts[key]++;
+        count++;
+      }
+      await new Promise(r => setTimeout(r, 0));
+    }
+
+    const pendingPoint = [];
+    for (const [key, features] of Object.entries(DATA_SERVICES_POINTS)) {
+      if (!SERVICES_TYPES[key]) continue;
+      for (const f of features) pendingPoint.push([key, f]);
+    }
+
+    for (let i = 0; i < pendingPoint.length; i += CHUNK) {
+      const batch = pendingPoint.slice(i, i + CHUNK);
+      for (const [key, feat] of batch) {
+        const type = SERVICES_TYPES[key];
+        const marker = L.marker(feat.coord, { icon: makeServiceIcon(type) });
+        marker.bindPopup(buildServicePopup(feat, key), { maxWidth: 280 });
+        servicePointLayers[key].push(marker);
+        serviceCounts[key]++;
+        count++;
+      }
+      await new Promise(r => setTimeout(r, 0));
+    }
+
+    applyServicesZoomVisibility();
+    updateLegendCounts();
+    return count;
+  }
+
+  function applyServicesZoomVisibility() {
+    const zoom = map.getZoom();
+    const showMarkers = zoom >= SERVICES_POINT_ZOOM_THRESHOLD;
+    for (const key of Object.keys(SERVICES_TYPES)) {
+      if (!serviceGroups[key]) continue;
+      for (const marker of servicePointLayers[key]) {
+        const onGroup = serviceGroups[key].hasLayer(marker);
+        if (showMarkers && !onGroup) serviceGroups[key].addLayer(marker);
+        else if (!showMarkers && onGroup) serviceGroups[key].removeLayer(marker);
+      }
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // MODULE PILLS — inyectadas dinámicamente según módulos del manifest
+  // ══════════════════════════════════════════════════════════════════════════
+  const headerControls = document.getElementById("header-controls");
+  const fondoControl = document.getElementById("fondo-control");
+
+  function injectPill(moduleKey, label) {
+    const pill = document.createElement("div");
+    pill.className = "pill on";
+    pill.dataset.module = moduleKey;
+    pill.innerHTML = `<span class="pill-dot"></span><span>${label}</span>`;
+    headerControls.insertBefore(pill, fondoControl);
+  }
+
+  if (hasZoning)   injectPill("zoning",   "Zoning");
+  if (hasVial)     injectPill("vial",      "Vial");
+  if (hasServices) injectPill("servicios", "Servicios");
+
+  // Módulo Transporte siempre presente pero deshabilitado (próximamente)
+  {
+    const pill = document.createElement("div");
+    pill.className = "pill disabled";
+    pill.dataset.module = "transporte";
+    pill.title = "Próximamente";
+    pill.innerHTML = `<span class="pill-dot"></span><span>Transporte</span>`;
+    headerControls.insertBefore(pill, fondoControl);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // MODULES dict — referencia dinámica a layer groups según presencia
+  // ══════════════════════════════════════════════════════════════════════════
+  const MODULES = {};
+  if (hasZoning) {
+    MODULES.zoning = {
+      label: "Zoning",
+      enabled: true,
+      layerGroupsRef: () => Object.values(groups),
+    };
+  }
+  if (hasVial) {
+    MODULES.vial = {
+      label: "Vial",
+      enabled: true,
+      layerGroupsRef: () => Object.values(vialGroups),
+    };
+  }
+  if (hasServices) {
+    MODULES.servicios = {
+      label: "Servicios",
+      enabled: true,
+      layerGroupsRef: () => Object.values(serviceGroups),
+    };
+  }
+  MODULES.transporte = { label: "Transporte", enabled: false, layerGroupsRef: () => [] };
+
+  // State persistido en localStorage (scope por ciudad)
+  const VIEW_STATE_KEY = `cs2-view-state-${CITY_SLUG}-v1`;
+
+  function readViewState() {
+    try {
+      const raw = localStorage.getItem(VIEW_STATE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch { return null; }
+  }
+
+  function writeViewState(state) {
+    try {
+      localStorage.setItem(VIEW_STATE_KEY, JSON.stringify(state));
+    } catch (e) {
+      console.warn("[view-state] no se pudo guardar:", e.message);
+    }
+  }
+
+  const savedState = readViewState();
+  const moduleStates = {};
+  for (const key of Object.keys(MODULES)) {
+    if (savedState && savedState.pills && savedState.pills[key]) {
+      moduleStates[key] = savedState.pills[key];
+    } else {
+      moduleStates[key] = MODULES[key].enabled ? "on" : "off";
+    }
+  }
+  let fondoMode = (savedState && savedState.fondo) || "hidden";
+
+  // Helper recursivo: aplica setStyle a TODOS los polygons/polylines descendientes
+  // de un layerGroup, incluyendo sub-grupos anidados (zonas tier-based tienen
+  // estructura groups[key] → [tieredLarge[key], tieredSmall[key]] → polígonos)
+  function eachPolygonDeep(layer, fn) {
+    if (typeof layer.setStyle === "function" && typeof layer.eachLayer !== "function") {
+      fn(layer);
+    } else if (typeof layer.eachLayer === "function") {
+      layer.eachLayer(sub => eachPolygonDeep(sub, fn));
+    }
+  }
+
+  function applyModuleState(moduleKey) {
+    const state = moduleStates[moduleKey];
+    const module = MODULES[moduleKey];
+    if (!module || !module.enabled) return;
+
+    const layers = module.layerGroupsRef();
+
+    if (state === "on" || fondoMode === "full") {
+      for (const lg of layers) {
+        if (!map.hasLayer(lg)) map.addLayer(lg);
+        eachPolygonDeep(lg, p => p.setStyle({ opacity: 0.9, fillOpacity: 0.55 }));
+      }
+    } else if (state === "off" && fondoMode === "faded") {
+      for (const lg of layers) {
+        if (!map.hasLayer(lg)) map.addLayer(lg);
+        eachPolygonDeep(lg, p => p.setStyle({ opacity: 0.3, fillOpacity: 0.15 }));
+      }
+    } else {
+      // state === "off" && fondoMode === "hidden"
+      for (const lg of layers) {
+        if (map.hasLayer(lg)) map.removeLayer(lg);
+      }
+    }
+  }
+
+  function applyAllStates() {
+    for (const key of Object.keys(MODULES)) {
+      applyModuleState(key);
+    }
+  }
+
+  function syncUI() {
+    for (const pill of document.querySelectorAll(".pill")) {
+      const key = pill.dataset.module;
+      if (!MODULES[key]) continue;
+      pill.classList.toggle("on", moduleStates[key] === "on");
+    }
+    for (const mt of document.querySelectorAll(".master-toggle")) {
+      const key = mt.dataset.module;
+      if (!MODULES[key]) continue;
+      mt.classList.toggle("on", moduleStates[key] === "on");
+    }
+    const anyOff = Object.keys(MODULES).some(
+      k => MODULES[k].enabled && moduleStates[k] === "off"
+    );
+    document.getElementById("fondo-control").classList.toggle("visible", anyOff);
+    document.getElementById("fondo-select").value = fondoMode;
+  }
+
+  function toggleModule(key) {
+    if (!MODULES[key] || !MODULES[key].enabled) return;
+    moduleStates[key] = moduleStates[key] === "on" ? "off" : "on";
+    applyModuleState(key);
+    syncUI();
+    writeViewState({ pills: moduleStates, fondo: fondoMode });
+  }
+
+  function setFondo(mode) {
+    fondoMode = mode;
+    applyAllStates();
+    syncUI();
+    writeViewState({ pills: moduleStates, fondo: fondoMode });
+  }
+
+  function wireUpModuleControls() {
+    for (const pill of document.querySelectorAll(".pill")) {
+      pill.addEventListener("click", () => {
+        const key = pill.dataset.module;
+        toggleModule(key);
+      });
+    }
+    for (const mt of document.querySelectorAll(".master-toggle")) {
+      mt.addEventListener("click", () => {
+        const key = mt.dataset.module;
+        toggleModule(key);
+      });
+    }
+    document.getElementById("fondo-select").addEventListener("change", e => {
+      setFondo(e.target.value);
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // LAYER CONTROL — solo secciones para módulos cargados
+  // ══════════════════════════════════════════════════════════════════════════
+  const overlayMap = {};
+
+  if (hasZoning) {
+    for (const [key, z] of Object.entries(ZONES)) {
+      const dot = `<span style="display:inline-block;width:10px;height:10px;background:${z.neon};` +
+                  `border-radius:2px;margin-right:7px;opacity:0.9;vertical-align:middle"></span>`;
+      overlayMap[dot + z.label] = groups[key];
+    }
+  }
+
+  if (hasVial) {
+    const vialSep = `<span style="display:inline-block;width:100%;border-top:1px solid #2a2d3d;` +
+                    `margin:6px 0 4px;padding-top:4px;color:#666;font-size:10px;` +
+                    `text-transform:uppercase;letter-spacing:1px">Vías</span>`;
+    overlayMap[vialSep] = L.layerGroup();  // separador no-op
+    for (const [key, v] of Object.entries(VIAL_TYPES)) {
+      const dot = `<span style="display:inline-block;width:14px;height:2px;background:${v.neon};` +
+                  `margin-right:7px;vertical-align:middle"></span>`;
+      overlayMap[dot + v.label] = vialGroups[key];
+    }
+  }
+
+  if (hasServices) {
+    const serviciosSep = `<span style="display:inline-block;width:100%;border-top:1px solid #2a2d3d;` +
+                         `margin:6px 0 4px;padding-top:4px;color:#666;font-size:10px;` +
+                         `text-transform:uppercase;letter-spacing:1px">Servicios</span>`;
+    overlayMap[serviciosSep] = L.layerGroup();  // separador no-op
+    for (const [key, s] of Object.entries(SERVICES_TYPES)) {
+      const dot = `<span style="display:inline-block;width:12px;height:12px;background:${s.color};` +
+                  `color:white;text-align:center;line-height:12px;font-size:8px;font-weight:700;` +
+                  `border-radius:50%;margin-right:7px;vertical-align:middle">${s.char}</span>`;
+      overlayMap[dot + s.label] = serviceGroups[key];
+    }
+  }
+
+  if (Object.keys(overlayMap).length > 0) {
+    L.control.layers(null, overlayMap, { collapsed: true, position: "topright" }).addTo(map);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // LEYENDA — solo secciones para módulos cargados
+  // ══════════════════════════════════════════════════════════════════════════
+  const legend = L.control({ position: "bottomleft" });
+  legend.onAdd = () => {
+    const div = L.DomUtil.create("div", "legend");
+    let html = "";
+
+    if (hasZoning) {
+      html += `<h4><span class="master-toggle on" data-module="zoning" title="Toggle Zoning"></span>CS2 Zonificación</h4>`;
+      let lastSect = "";
+      for (const [key, z] of Object.entries(ZONES)) {
+        if (z.sect !== lastSect) {
+          html += `<div class="lsect">${z.sect}</div>`;
+          lastSect = z.sect;
+        }
+        html += `<div class="li">
+          <div class="ldot" style="background:${z.neon}"></div>
+          <span class="lname">${z.label}</span>
+          <span class="lcount zero" id="lcount-${key}">0</span>
+        </div>`;
+      }
+    }
+
+    if (hasVial) {
+      html += `<h4 style="margin-top:14px"><span class="master-toggle on" data-module="vial" title="Toggle Vial"></span>Red Vial</h4>`;
+      let lastSect = "";
+      for (const [key, v] of Object.entries(VIAL_TYPES)) {
+        if (v.sect !== lastSect) {
+          html += `<div class="lsect">${v.sect}</div>`;
+          lastSect = v.sect;
+        }
+        html += `<div class="li">
+          <div class="ldot" style="background:${v.neon};width:14px;height:2px;border-radius:1px"></div>
+          <span class="lname">${v.label}</span>
+          <span class="lcount zero" id="vcount-${key}">0</span>
+        </div>`;
+      }
+    }
+
+    if (hasServices) {
+      html += `<h4 style="margin-top:14px"><span class="master-toggle on" data-module="servicios" title="Toggle Servicios"></span>Servicios</h4>`;
+      for (const [key, s] of Object.entries(SERVICES_TYPES)) {
+        html += `<div class="li">
+          <div class="ldot" style="background:${s.color};color:white;font-size:8px;font-weight:700;text-align:center;line-height:10px;border-radius:50%">${s.char}</div>
+          <span class="lname">${s.label}</span>
+          <span class="lcount zero" id="scount-${key}">0</span>
+        </div>`;
+      }
+    }
+
+    div.innerHTML = html;
+    return div;
+  };
+  legend.addTo(map);
+
+  function updateLegendCounts() {
+    for (const [key, n] of Object.entries(zoneCounts)) {
+      const el = document.getElementById("lcount-" + key);
+      if (!el) continue;
+      el.textContent = n.toLocaleString();
+      el.classList.toggle("zero", n === 0);
+    }
+    for (const [key, n] of Object.entries(vialCounts)) {
+      const el = document.getElementById("vcount-" + key);
+      if (!el) continue;
+      el.textContent = n.toLocaleString();
+      el.classList.toggle("zero", n === 0);
+    }
+    for (const [key, n] of Object.entries(serviceCounts)) {
+      const el = document.getElementById("scount-" + key);
+      if (!el) continue;
+      el.textContent = n.toLocaleString();
+      el.classList.toggle("zero", n === 0);
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // MAIN LOADER — solo prebuilt (manifest-driven, sin live-Overpass)
+  // ══════════════════════════════════════════════════════════════════════════
+  async function loadAll() {
+    // Zoning — síncrono (render de polígonos es rápido con canvas renderer)
+    if (hasZoning) {
+      setP("zoning", "loading", "⟳ Render…");
+      let zoningCount = 0;
+      try {
+        for (const [zKey, fn] of Object.entries(PREBUILT_DATASETS)) {
+          const items = fn();
+          const count = renderPrebuilt(zKey, items);
+          zoningCount += count;
+          bump(count);
+        }
+        setP("zoning", "done", `✓ ${zoningCount.toLocaleString()}`);
+      } catch (e) {
+        console.error("[zoning] render error:", e);
+        setP("zoning", "error", "✗ Error");
+      }
+    }
+
+    // Vial — fire-and-forget (chunked async, 108k+ features en Minneapolis)
+    if (hasVial) {
+      setP("vial", "loading", "⟳ Render…");
+      renderVialFeatures().then(n => {
+        bump(n);
+        setP("vial", "done", `✓ ${n.toLocaleString()}`);
+        console.log(`[vial] rendered ${n.toLocaleString()} features`);
+      }).catch(e => {
+        console.error("[vial] render error:", e);
+        setP("vial", "error", "✗ Error");
+      });
+    }
+
+    // Services — fire-and-forget (chunked async, ~2000 polígonos)
+    if (hasServices) {
+      setP("services", "loading", "⟳ Render…");
+      renderServicesFeatures().then(n => {
+        bump(n);
+        setP("services", "done", `✓ ${n.toLocaleString()}`);
+        console.log(`[services] rendered ${n.toLocaleString()} features`);
+      }).catch(e => {
+        console.error("[services] render error:", e);
+        setP("services", "error", "✗ Error");
+      });
+    }
+
+    finalizeLoad();
+  }
+
+  function finalizeLoad() {
+    const overlay = document.getElementById("loading");
+    overlay.style.transition = "opacity 0.5s";
+    overlay.style.opacity    = "0";
+    setTimeout(() => { overlay.style.display = "none"; }, 530);
+
+    const sb = document.getElementById("statusbar");
+    sb.innerHTML = `<b>${total.toLocaleString()}</b> polígonos · ${CITY_META.display_name} · datos OSM`;
+    sb.style.display = "block";
+
+    updateLegendCounts();
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // GO
+  // ══════════════════════════════════════════════════════════════════════════
+  loadAll().then(() => {
+    wireUpModuleControls();
+    applyAllStates();
+    syncUI();
+  });
+}
+
+// Lanzar todo
+bootstrap();
+</script>
+</body>
+</html>

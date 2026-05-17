@@ -1,0 +1,47 @@
+{
+  "minneapolis": {
+    "display_name": "Minneapolis, MN",
+    "country": "USA",
+    "bbox": [44.86, -93.38, 45.05, -93.17],
+    "center": [44.97, -93.27],
+    "zoom": 12,
+    "tagline": "Ciudad hero — fully featured",
+    "locale": "es"
+  },
+  "manhattan": {
+    "display_name": "Manhattan, NYC",
+    "country": "USA",
+    "bbox": [40.700, -74.020, 40.880, -73.910],
+    "center": [40.790, -73.965],
+    "zoom": 12,
+    "tagline": "Grilla densa de rascacielos",
+    "locale": "es"
+  },
+  "tokyo": {
+    "display_name": "Tokyo (Central)",
+    "country": "Japan",
+    "bbox": [35.620, 139.680, 35.740, 139.840],
+    "center": [35.680, 139.760],
+    "zoom": 12,
+    "tagline": "Tejido urbano hiper-denso y mixto",
+    "locale": "es"
+  },
+  "amsterdam": {
+    "display_name": "Amsterdam",
+    "country": "Netherlands",
+    "bbox": [52.320, 4.830, 52.420, 4.970],
+    "center": [52.370, 4.900],
+    "zoom": 13,
+    "tagline": "Canales y bike-first urbanism",
+    "locale": "es"
+  },
+  "madison": {
+    "display_name": "Madison, WI",
+    "country": "USA",
+    "bbox": [43.030, -89.500, 43.130, -89.300],
+    "center": [43.080, -89.400],
+    "zoom": 12,
+    "tagline": "Isthmus capital — mid-size americana",
+    "locale": "es"
+  }
+}
