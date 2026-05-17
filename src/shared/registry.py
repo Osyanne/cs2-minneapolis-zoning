@@ -65,3 +65,62 @@ def get_city(cities: dict, slug: str) -> dict:
             f"Disponibles: {sorted(cities.keys())}"
         )
     return cities[slug]
+
+
+# ── Manifest IO ──────────────────────────────────────────────────────────────
+
+import hashlib
+from datetime import datetime, timezone
+
+
+VALID_MODULES = {"zoning", "vial", "services"}
+
+
+def manifest_path(visualizer_root: Path, slug: str) -> Path:
+    """Devuelve la ruta esperada del manifest para una ciudad."""
+    return Path(visualizer_root) / "cities" / slug / "manifest.json"
+
+
+def load_manifest(visualizer_root: Path, slug: str) -> dict | None:
+    """Lee manifest.json de la ciudad. Devuelve None si no existe."""
+    p = manifest_path(visualizer_root, slug)
+    if not p.exists():
+        return None
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise RegistryError(f"manifest.json malformado para {slug}: {e}") from e
+
+
+def hash_file(path: Path, length: int = 8) -> str:
+    """sha256 trunco a `length` chars para cache busting."""
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()[:length]
+
+
+def save_manifest_entry(
+    visualizer_root: Path,
+    slug: str,
+    module: str,
+    file_path: Path,
+    features: int,
+) -> dict:
+    """Agrega/actualiza entry de `module` en manifest.json de la ciudad.
+
+    Preserva entries de otros módulos. Crea directorio si no existe.
+    Devuelve el manifest completo tras el merge.
+    """
+    if module not in VALID_MODULES:
+        raise ValueError(
+            f"módulo debe ser uno de {sorted(VALID_MODULES)}, no {module!r}"
+        )
+    manifest = load_manifest(visualizer_root, slug) or {"modules": {}}
+    manifest.setdefault("modules", {})
+    manifest["modules"][module] = {
+        "hash": hash_file(file_path),
+        "features": int(features),
+    }
+    manifest["generated_at"] = datetime.now(timezone.utc).isoformat()
+    p = manifest_path(visualizer_root, slug)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    return manifest

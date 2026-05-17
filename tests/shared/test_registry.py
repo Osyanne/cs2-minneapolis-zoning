@@ -94,3 +94,79 @@ def test_real_cities_json_minneapolis_bbox_unchanged():
     repo_root = Path(__file__).resolve().parents[2]
     cities = load_cities(repo_root / "cities.json")
     assert cities["minneapolis"]["bbox"] == [44.86, -93.38, 45.05, -93.17]
+
+
+from shared.registry import (
+    load_manifest, save_manifest_entry, manifest_path, hash_file, VALID_MODULES,
+)
+
+
+def test_manifest_path_structure(tmp_path):
+    p = manifest_path(tmp_path, "manhattan")
+    assert p == tmp_path / "cities" / "manhattan" / "manifest.json"
+
+
+def test_load_manifest_returns_none_if_missing(tmp_path):
+    assert load_manifest(tmp_path, "ghost") is None
+
+
+def test_load_manifest_reads_valid(tmp_path):
+    p = manifest_path(tmp_path, "manhattan")
+    p.parent.mkdir(parents=True)
+    p.write_text(json.dumps({
+        "modules": {"zoning": {"hash": "abc123", "features": 100}},
+        "generated_at": "2026-05-17T00:00:00+00:00",
+    }))
+    m = load_manifest(tmp_path, "manhattan")
+    assert m["modules"]["zoning"]["features"] == 100
+
+
+def test_load_manifest_malformed_raises(tmp_path):
+    p = manifest_path(tmp_path, "manhattan")
+    p.parent.mkdir(parents=True)
+    p.write_text("not json")
+    with pytest.raises(RegistryError):
+        load_manifest(tmp_path, "manhattan")
+
+
+def test_save_manifest_entry_creates_file(tmp_path):
+    data_file = tmp_path / "fake_data.js"
+    data_file.write_text("const X = 1;")
+    manifest = save_manifest_entry(tmp_path, "manhattan", "zoning", data_file, 42)
+    assert manifest["modules"]["zoning"]["features"] == 42
+    assert len(manifest["modules"]["zoning"]["hash"]) == 8
+    assert "generated_at" in manifest
+    on_disk = load_manifest(tmp_path, "manhattan")
+    assert on_disk == manifest
+
+
+def test_save_manifest_entry_preserves_other_modules(tmp_path):
+    p = manifest_path(tmp_path, "minneapolis")
+    p.parent.mkdir(parents=True)
+    p.write_text(json.dumps({
+        "modules": {"zoning": {"hash": "old", "features": 1}},
+        "generated_at": "2026-05-01T00:00:00+00:00",
+    }))
+    data_file = tmp_path / "fake_vial.js"
+    data_file.write_text("const Y = 2;")
+    manifest = save_manifest_entry(tmp_path, "minneapolis", "vial", data_file, 99)
+    assert "zoning" in manifest["modules"]
+    assert "vial" in manifest["modules"]
+    assert manifest["modules"]["zoning"]["features"] == 1
+    assert manifest["modules"]["vial"]["features"] == 99
+
+
+def test_save_manifest_entry_invalid_module_raises(tmp_path):
+    data_file = tmp_path / "x.js"
+    data_file.write_text("x")
+    with pytest.raises(ValueError, match="módulo"):
+        save_manifest_entry(tmp_path, "x", "invalid_module", data_file, 1)
+
+
+def test_hash_file_deterministic(tmp_path):
+    p = tmp_path / "f.js"
+    p.write_text("hello")
+    h1 = hash_file(p)
+    h2 = hash_file(p)
+    assert h1 == h2
+    assert len(h1) == 8
