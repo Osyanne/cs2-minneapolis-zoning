@@ -1,0 +1,70 @@
+name: City Request
+description: Request a new city for the CS2 OSM Toolkit Featured Cities Pack
+title: "[City Request] "
+labels: ["city-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ¡Gracias por pedir una ciudad! Por favor llená todos los campos.
+        Tiempo estimado para agregar (zoning-only): 30-60 min después de aceptada.
+
+  - type: input
+    id: display_name
+    attributes:
+      label: City display name
+      description: "Nombre completo de la ciudad como debería mostrarse (ej. 'São Paulo, Brazil')"
+      placeholder: "Madison, WI"
+    validations:
+      required: true
+
+  - type: input
+    id: slug
+    attributes:
+      label: Proposed slug
+      description: "Identificador URL: lowercase, solo letras/números/guiones bajos, sin acentos (ej. 'sao_paulo', 'madison')"
+      placeholder: "madison"
+    validations:
+      required: true
+
+  - type: input
+    id: country
+    attributes:
+      label: Country / region
+      placeholder: "USA, Japan, Netherlands, etc."
+    validations:
+      required: true
+
+  - type: input
+    id: bbox
+    attributes:
+      label: Bounding box
+      description: |
+        Formato `south,west,north,east` (4 floats).
+        Usá [bboxfinder.com](http://bboxfinder.com/) para obtenerlo visualmente.
+        Recomendado: 10-20 km de lado, foco en downtown + áreas inmediatas.
+      placeholder: "43.030,-89.500,43.130,-89.300"
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: ¿Por qué esta ciudad?
+      description: "Urban form interesante, builder popular que la pidió, demanda local, etc."
+      placeholder: "Capital state pequeña con isthmus + lagos, urban form única."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: modules
+    attributes:
+      label: Módulos solicitados
+      description: |
+        Default: solo zoning (cubre 95% del valor del toolkit, rápido de generar).
+        Vial/services son ampliación on-demand — marcarlos solo si tu uso requiere infraestructura específica.
+      options:
+        - label: Zoning (siempre)
+          required: true
+        - label: Vial (opcional — agrega ~30 min al pipeline)
+        - label: Services (opcional — agrega ~30 min)
