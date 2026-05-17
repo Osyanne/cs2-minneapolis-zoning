@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CS2 OSM Toolkit — Featured Cities</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0d1117; color: #c9d1d9;
+      min-height: 100vh;
+    }
+    header {
+      padding: 3rem 1rem 2rem; text-align: center;
+      border-bottom: 1px solid #30363d;
+    }
+    header h1 { margin: 0; font-size: 2rem; }
+    header p { margin: 0.5rem 0; color: #8b949e; }
+    main {
+      max-width: 1400px; margin: 0 auto; padding: 2rem 1rem;
+    }
+    .cities-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+    .city-card {
+      display: block; text-decoration: none; color: inherit;
+      background: #161b22; border: 1px solid #30363d;
+      border-radius: 6px; overflow: hidden;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .city-card:hover { transform: translateY(-2px); border-color: #58a6ff; }
+    .thumb {
+      height: 180px;
+      background-size: cover; background-position: center;
+      background-color: #21262d;
+    }
+    .city-info { padding: 1rem; }
+    .city-info h2 { margin: 0 0 0.25rem; font-size: 1.1rem; }
+    .country { margin: 0; color: #8b949e; font-size: 0.85rem; }
+    .tagline { margin: 0.5rem 0; font-size: 0.9rem; }
+    .badges { display: flex; gap: 0.3rem; flex-wrap: wrap; margin: 0.5rem 0; }
+    .badge {
+      background: #1f6feb; color: white;
+      padding: 0.1rem 0.5rem; border-radius: 3px;
+      font-size: 0.75rem;
+    }
+    .badge-pending { background: #6e7681; }
+    .stats { margin: 0.5rem 0 0; color: #8b949e; font-size: 0.8rem; }
+    footer {
+      max-width: 1400px; margin: 3rem auto 2rem; padding: 0 1rem;
+      text-align: center; color: #8b949e; font-size: 0.9rem;
+    }
+    footer a { color: #58a6ff; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🏙 CS2 OSM Toolkit</h1>
+    <p>Mapas de zonificación reales para creadores de Cities: Skylines 2</p>
+  </header>
+  <main>
+    <div class="cities-grid">
+
+    <a href="map.html?city=minneapolis" class="city-card">
+      <div class="thumb"
+           style="background-image: url('assets/thumbnails/minneapolis.png')"></div>
+      <div class="city-info">
+        <h2>Minneapolis, MN</h2>
+        <p class="country">USA</p>
+        <p class="tagline">Ciudad hero — fully featured</p>
+        <div class="badges"><span class="badge">Zoning</span> <span class="badge">Vial</span> <span class="badge">Servicios</span></div>
+        <p class="stats">192.9k features</p>
+      </div>
+    </a>
+
+    <a href="map.html?city=manhattan" class="city-card">
+      <div class="thumb"
+           style="background-image: url('assets/thumbnails/manhattan.png')"></div>
+      <div class="city-info">
+        <h2>Manhattan, NYC</h2>
+        <p class="country">USA</p>
+        <p class="tagline">Grilla densa de rascacielos</p>
+        <div class="badges"><span class="badge">Zoning</span></div>
+        <p class="stats">23.2k features</p>
+      </div>
+    </a>
+
+    <a href="map.html?city=tokyo" class="city-card">
+      <div class="thumb"
+           style="background-image: url('assets/thumbnails/tokyo.png')"></div>
+      <div class="city-info">
+        <h2>Tokyo (Central)</h2>
+        <p class="country">Japan</p>
+        <p class="tagline">Tejido urbano hiper-denso y mixto</p>
+        <div class="badges"><span class="badge">Zoning</span></div>
+        <p class="stats">34.9k features</p>
+      </div>
+    </a>
+
+    <a href="map.html?city=amsterdam" class="city-card">
+      <div class="thumb"
+           style="background-image: url('assets/thumbnails/amsterdam.png')"></div>
+      <div class="city-info">
+        <h2>Amsterdam</h2>
+        <p class="country">Netherlands</p>
+        <p class="tagline">Canales y bike-first urbanism</p>
+        <div class="badges"><span class="badge">Zoning</span></div>
+        <p class="stats">89.2k features</p>
+      </div>
+    </a>
+
+    <a href="map.html?city=madison" class="city-card">
+      <div class="thumb"
+           style="background-image: url('assets/thumbnails/madison.png')"></div>
+      <div class="city-info">
+        <h2>Madison, WI</h2>
+        <p class="country">USA</p>
+        <p class="tagline">Isthmus capital — mid-size americana</p>
+        <div class="badges"><span class="badge">Zoning</span></div>
+        <p class="stats">36.7k features</p>
+      </div>
+    </a>
+    </div>
+  </main>
+  <footer>
+    <p>
+      ¿Tu ciudad no está?
+      <a href="https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/issues/new?template=city-request.yml" target="_blank" rel="noopener">Pedila acá</a>
+      ·
+      <a href="https://github.com/Osyanne/cs2-minneapolis-osm-toolkit" target="_blank" rel="noopener">Código en GitHub</a>
+    </p>
+  </footer>
+</body>
+</html>
