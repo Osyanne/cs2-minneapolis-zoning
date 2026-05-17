@@ -8,6 +8,7 @@
   <!-- Datos pre-generados por extract_zoning.py — opcional, si no existe se usa Overpass live -->
   <script src="datos_zonificacion.js" onerror="window.__noPrebuilt=true"></script>
   <script src="datos_vial.js" onerror="window.__noVialPrebuilt=true"></script>
+  <script src="datos_servicios.js" onerror="window.__noServicesPrebuilt=true"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; background: #0a0d1a; font-family: 'Segoe UI', system-ui, sans-serif; }
@@ -340,6 +341,21 @@ const VIAL_TYPES = {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
+// SERVICES_TYPES — 5 capas de servicios CS2 (Sesión 3, 2026-05-16)
+// Renderizadas como polígonos (siempre visibles) + markers de char en círculo
+// (visibles solo en zoom ≥ 12). Alineadas a las solapas de servicios base CS2.
+// ══════════════════════════════════════════════════════════════════════════════
+const SERVICES_TYPES = {
+  health:    { label: "Atención sanitaria y funeraria", color: "#D81B60", char: "H" },
+  education: { label: "Educación e investigación",      color: "#FDD835", char: "E" },
+  fire:      { label: "Bomberos",                        color: "#E64A19", char: "B" },
+  admin:     { label: "Policía y administración",        color: "#1E88E5", char: "A" },
+  parks:     { label: "Parques",                         color: "#43A047", char: "P" },
+};
+
+const SERVICES_POINT_ZOOM_THRESHOLD = 12;  // markers ocultos en zoom < 12
+
+// ══════════════════════════════════════════════════════════════════════════════
 // OVERPASS QUERIES — 8 source queries (Sesión 1.6.1, CS2-aligned + spatial mixed)
 // Cada source key se procesa con un clasificador específico que devuelve el
 // cs2_key final (ej. "res_high", "office_low"). Las queries se procesan en
@@ -653,6 +669,18 @@ const vialGroups = Object.fromEntries(
   Object.keys(VIAL_TYPES).map(k => [k, L.layerGroup().addTo(map)])
 );
 const vialCounts = Object.fromEntries(Object.keys(VIAL_TYPES).map(k => [k, 0]));
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SERVICES LAYER GROUPS — uno por bucket. Polígonos en serviceGroups; markers
+// (puntos) en servicePointLayers — refs separadas para tier-hiding por zoom.
+// ══════════════════════════════════════════════════════════════════════════════
+const serviceGroups = Object.fromEntries(
+  Object.keys(SERVICES_TYPES).map(k => [k, L.layerGroup().addTo(map)])
+);
+const servicePointLayers = Object.fromEntries(
+  Object.keys(SERVICES_TYPES).map(k => [k, []])
+);
+const serviceCounts = Object.fromEntries(Object.keys(SERVICES_TYPES).map(k => [k, 0]));
 
 // Helper: añadir polígono a la sub-capa correcta según su área (si es tier-based)
 function addPolygonToZone(zKey, polygon, areaM2) {
