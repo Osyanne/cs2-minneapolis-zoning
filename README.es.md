@@ -18,7 +18,7 @@
 
 Un toolkit modular que extrae datos reales de infraestructura desde OpenStreetMap (vía Overpass API) y los renderea en un mapa Leaflet dark-mode interactivo. Sirve como referencia visual para construir Mineapolis 1:1 en Cities: Skylines 2.
 
-Actualmente incluye **dos módulos**, cada uno con su propio extractor y capa de visualización:
+Actualmente incluye **tres módulos**, cada uno con su propio extractor y capa de visualización:
 
 ### 🗺 Módulo Zonificación
 Clasifica todos los polígonos de edificios en los **11 tipos de zona oficiales de Cities: Skylines 2** (Low/Medium/High Density Residential, Row Housing, Mixed Housing, Low Rent Housing, Low/High Density Business, Low/High Density Offices, Industrial Manufacturing). 81,732 polígonos en el bbox de Mineapolis.
@@ -32,8 +32,38 @@ Clasifica todas las vías OSM en las **6 categorías de carretera de CS2** (High
 Ejecutar: `cd src && uv run extract-vial`
 Salida: `visualizer/datos_vial.js` (~25 MB)
 
+### 🏥 Módulo Servicios (Sesión 3)
+
+5 capas alineadas a las solapas de servicios base de Cities: Skylines 2 con buena cobertura OpenStreetMap:
+
+- **H** Atención sanitaria y funeraria — hospitales, clínicas, doctors, funeral directors, crematorios, cementerios
+- **E** Educación e investigación — schools, universities, colleges, kindergartens, research institutes
+- **B** Bomberos — fire stations
+- **A** Policía y administración — police HQ, city hall, courthouses, prison + landmarks culturales (bibliotecas, museos, teatros, arts centres, cinemas) + oficinas de gobierno
+- **P** Parques — parks, nature reserves, gardens, playgrounds, sports centres
+
+**Generar prebuilt:**
+```bash
+cd src
+uv run extract-services
+```
+
+**Descargar prebuilt (~1.3 MB):**
+[`datos_servicios.js` v3.1](https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/releases/download/v3.1/datos_servicios.js)
+
+**Render:**
+- Polígonos siempre visibles (Hennepin Healthcare, U of M campus, Minnehaha Park, Walker Art Center)
+- Markers de char en círculo (H/E/B/A/P) para POIs sin polígono — ocultos en zoom < 12, visibles en zoom ≥ 12
+- Click en polígono o marker → popup con nombre + subtype OSM + tags raw colapsables
+- Layer Control y leyenda extendidas con sección "Servicios"
+
+**Notas:**
+- Bibliotecas, museos, teatros, arts centres, cinemas comparten el bucket `admin` con policía y oficinas de gobierno. Se diferencian solo por nombre + subtype en el popup.
+- Lugares de culto descartados conscientemente (no en estructura CS2 base).
+- Electricidad, agua y saneamiento, gestión de residuos diferidos a **Sesión 4** (requieren fuentes EIA + MN GIS Commons + opendata.minneapolismn.gov, no OSM).
+- Bbox de Minneapolis típicamente devuelve ~2300 features. Render async chunked para no bloquear el browser durante init.
+
 ### Próximos
-- 🏥 Módulo Servicios (salud, educación, parques, policía, bomberos, energía, agua) — Sesión 3
 - 🚌 Módulo Transporte (Blue/Green Line, BRT, rutas de bus, ciclovías) — Sesión 4
 
 ## Features del visualizer
@@ -68,7 +98,7 @@ Los archivos prebuilt `datos_*.js` (~53 MB en total) **no están** en este repo.
 
 **Opción A — Descargar desde GitHub Releases** (recomendado):
 1. Ir a https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/releases
-2. Descargar `datos_zonificacion.js` y `datos_vial.js` desde la última release
+2. Descargar `datos_zonificacion.js`, `datos_vial.js` y `datos_servicios.js` desde la última release
 3. Colocarlos en `visualizer/`
 
 **Opción B — Regenerar localmente**:
@@ -76,6 +106,7 @@ Los archivos prebuilt `datos_*.js` (~53 MB en total) **no están** en este repo.
 cd src
 uv run extract-zoning    # ~3-5 min
 uv run extract-vial      # ~30s
+uv run extract-services  # ~30s
 ```
 
 ### Levantar el visualizer
@@ -98,14 +129,19 @@ src/
 │   ├── extract.py            # Pipeline CLI (entry: extract-zoning)
 │   ├── patch_colors.py       # Utility de paleta
 │   └── extract_msbuildings.py  # Augmentación experimental con MS Buildings
-└── vial/
-    ├── zones.py              # Modelo de vías CS2 + query Overpass
-    ├── classifiers.py        # Clasificador OSM highway tag → categoría vial
-    └── extract.py            # Pipeline CLI (entry: extract-vial)
+├── vial/
+│   ├── zones.py              # Modelo de vías CS2 + query Overpass
+│   ├── classifiers.py        # Clasificador OSM highway tag → categoría vial
+│   └── extract.py            # Pipeline CLI (entry: extract-vial)
+└── services/
+    ├── zones.py              # Modelo de servicios CS2 + queries Overpass (5 buckets)
+    ├── classifiers.py        # Clasificador OSM tags → bucket H/E/B/A/P
+    └── extract.py            # Pipeline CLI (entry: extract-services)
 
 tests/
 ├── zoning/                   # 61 tests (50 classifiers + 11 query sanity)
-└── vial/                     # 12 tests
+├── vial/                     # 12 tests
+└── services/                 # (tests pendientes — Sesión 3)
 
 visualizer/
 ├── index.html                # Visualizer Leaflet single-file con module pills
@@ -121,11 +157,11 @@ docs/
 
 | | |
 |---|---|
-| **Módulos** | 2 (Zonificación, Red Vial) — 2 pendientes (Servicios, Transporte) |
+| **Módulos** | 3 (Zonificación, Red Vial, Servicios) — 1 pendiente (Transporte) |
 | **Bounding box** | `44.86,-93.38,45.05,-93.17` (Mineapolis + bordes inmediatos) |
-| **Features totales** | 190.557 (81.732 polígonos de zonificación + 108.825 LineStrings viales) |
+| **Features totales** | 192.830 (81.732 zoning + 108.825 vial + 2.273 servicios) |
 | **Tests** | 73 pasando (50 clasificador zonificación + 11 sanidad zoning + 12 sanidad vial) |
-| **Última extracción** | 2026-05-15 |
+| **Última extracción** | 2026-05-16 |
 
 ## Adaptarlo a otras ciudades
 
