@@ -36,7 +36,9 @@ from zoning.classifiers import (
     classify_commercial,
     classify_office,
     classify_parking,
+    classify_generic_building_by_area,
     polygon_area_m2,
+    LANDUSE_TO_CS2_KEY,
 )
 from zoning.zones import CS2_LABELS, build_queries
 
@@ -117,6 +119,139 @@ def resolve_city_args(
     raise ValueError("Debes pasar --city o --bbox+--slug")
 
 
+# ── Generic-building spatial join ────────────────────────────────────────────
+
+def _collect_landuse_polygons(raw: dict) -> list:
+    """
+    Extrae los polígonos landuse=* presentes en los resultados raw de Overpass
+    y los pares con su CS2 key. Devuelve [(shapely.Polygon, cs2_key), ...].
+
+    Fuentes consideradas:
+      - raw["landuse_residential"]: TODO el contenido es landuse=residential
+        (la query es específica).
+      - raw["commercial"]: filtrar elementos con landuse ∈ {commercial, retail}.
+      - raw["industrial"]: filtrar elementos con landuse=industrial.
+      - raw["office"]:     filtrar elementos con landuse=office.
+    """
+    from shapely.geometry import Polygon as _ShapelyPolygon
+
+    polys: list = []
+
+    def _try_add(el: dict, cs2_key: str) -> None:
+        coords = extract_coords(el)
+        if not coords or len(coords) < 4:  # cerrado mínimo: 3 puntos + repetición
+            return
+        try:
+            # shapely usa (x=lon, y=lat); coords es [[lat, lon], ...]
+            shp = _ShapelyPolygon([(c[1], c[0]) for c in coords])
+        except Exception:
+            return
+        if not shp.is_valid or shp.is_empty:
+            return
+        polys.append((shp, cs2_key))
+
+    for el in raw.get("landuse_residential", []):
+        _try_add(el, "res_low_house")
+
+    for el in raw.get("commercial", []):
+        landuse = ((el.get("tags") or {}).get("landuse") or "").lower()
+        if landuse in ("commercial", "retail"):
+            _try_add(el, "com_low")
+
+    for el in raw.get("industrial", []):
+        landuse = ((el.get("tags") or {}).get("landuse") or "").lower()
+        if landuse == "industrial":
+            _try_add(el, "industrial")
+
+    for el in raw.get("office", []):
+        landuse = ((el.get("tags") or {}).get("landuse") or "").lower()
+        if landuse == "office":
+            _try_add(el, "office_low")
+
+    return polys
+
+
+def _process_generic_buildings(
+    raw: dict,
+    output: dict,
+    seen_ids: set,
+    add_fn,
+) -> tuple[int, int, int]:
+    """
+    Procesa raw["generic_buildings"] (building=yes) y los clasifica vía
+    spatial join contra landuse polygons + heurística de área como fallback.
+
+    Returns:
+      (total_added, classified_by_landuse, classified_by_area)
+    """
+    from shapely.geometry import Polygon as _ShapelyPolygon
+    from shapely.strtree import STRtree
+
+    elements = raw.get("generic_buildings", [])
+    if not elements:
+        return (0, 0, 0)
+
+    landuse_polys = _collect_landuse_polygons(raw)
+    landuse_geoms = [lp[0] for lp in landuse_polys]
+    landuse_keys = [lp[1] for lp in landuse_polys]
+    tree = STRtree(landuse_geoms) if landuse_geoms else None
+
+    added = 0
+    by_landuse = 0
+    by_area = 0
+
+    for el in elements:
+        if el["id"] in seen_ids:
+            continue
+        coords = extract_coords(el)
+        if not coords:
+            continue
+
+        try:
+            building_poly = _ShapelyPolygon([(c[1], c[0]) for c in coords])
+        except Exception:
+            continue
+        if not building_poly.is_valid or building_poly.is_empty:
+            continue
+
+        cs2_key = None
+        if tree is not None:
+            centroid = building_poly.centroid
+            # STRtree.query returns geometries OR indices depending on version;
+            # normalizamos a iterable de geometrías candidatas.
+            try:
+                candidates = tree.query(centroid)
+                for cand in candidates:
+                    # shapely 2.x: query() devuelve indices (numpy array).
+                    if isinstance(cand, (int,)) or hasattr(cand, "__index__"):
+                        geom = landuse_geoms[int(cand)]
+                        key = landuse_keys[int(cand)]
+                    else:
+                        # shapely 1.x compat path: returns geometry directly.
+                        geom = cand
+                        try:
+                            key = landuse_keys[landuse_geoms.index(geom)]
+                        except ValueError:
+                            continue
+                    if geom.contains(centroid):
+                        cs2_key = key
+                        break
+            except Exception:
+                cs2_key = None
+
+        if cs2_key is not None:
+            by_landuse += 1
+        else:
+            area = polygon_area_m2(coords)
+            cs2_key = classify_generic_building_by_area(area)
+            by_area += 1
+
+        if add_fn(el, cs2_key):
+            added += 1
+
+    return (added, by_landuse, by_area)
+
+
 # ── Main pipeline ─────────────────────────────────────────────────────────────
 
 def main():
@@ -162,6 +297,8 @@ def main():
     # ORDEN IMPORTANTE: mixed_apartments PRIMERO → captura apartments que tienen
     # POIs comerciales dentro (spatial join) → se clasifican como res_mixed.
     # Luego apartments procesa el resto sin spatial join.
+    # generic_buildings AL FINAL → solo recoge building=yes que NO fueron
+    # capturados por queries específicas (dedup global por OSM id).
     SOURCE_KEYS = [
         "mixed_apartments",
         "apartments",
@@ -171,6 +308,7 @@ def main():
         "office",
         "industrial",
         "parking",
+        "generic_buildings",
     ]
     print(f"[1/2] Downloading {len(SOURCE_KEYS)} source queries from Overpass...")
     raw: dict[str, list] = {}
@@ -249,12 +387,26 @@ def main():
         suffix = classify_parking(el.get("tags") or {})
         add(el, f"prk_{suffix}")
 
+    # 8. Generic buildings (building=yes) — spatial join contra landuse + area heuristic.
+    #    Cobertura sparse de OSM (small-town LATAM/África/Asia) suele tener la mayoría
+    #    de los edificios mapeados como building=yes sin clasificación. Esta pasada los
+    #    recoge: si caen dentro de un polígono landuse=* conocido, se clasifican por
+    #    él; si no, heurística defensiva por área (≤300 m² casa, ≤1500 m² mediano,
+    #    sino industrial).
+    generic_added, generic_by_landuse, generic_by_area = _process_generic_buildings(
+        raw, output, seen_ids, add
+    )
+
     # ── Summary ───────────────────────────────────────────────────────────────
     total = sum(len(v) for v in output.values())
     print()
     for key in CS2_LABELS:
         print(f"  {key:<16}: {len(output[key]):>6}  ({CS2_LABELS[key]})")
     print(f"  {'skipped':<16}: {skipped:>6}")
+    print(
+        f"  {'generic+':<16}: {generic_added:>6}  "
+        f"(landuse: {generic_by_landuse}, area heur: {generic_by_area})"
+    )
     print(f"  {'TOTAL':<16}: {total:>6}")
 
     # ── Write output ──────────────────────────────────────────────────────────

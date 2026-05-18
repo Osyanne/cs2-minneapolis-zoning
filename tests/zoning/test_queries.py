@@ -6,7 +6,8 @@ from zoning.zones import build_queries, CS2_LABELS
 
 BBOX = "44.86,-93.38,45.05,-93.17"
 
-# Las 8 source queries del modelo CS2-aligned v3.1 (Sesión 1.6.1 añadió mixed_apartments)
+# Las 9 source queries del modelo CS2-aligned (v3.3.4 añadió generic_buildings
+# para zonas con cobertura OSM sparse — building=yes sin clasificar).
 EXPECTED_SOURCE_KEYS = {
     "mixed_apartments",
     "apartments",
@@ -16,6 +17,7 @@ EXPECTED_SOURCE_KEYS = {
     "office",
     "industrial",
     "parking",
+    "generic_buildings",
 }
 
 # Las 13 zonas CS2 del modelo realineado
@@ -107,3 +109,13 @@ def test_mixed_apartments_uses_spatial_join():
     # Debe incluir también tags directos de mixed-use
     assert 'building"="mixed_use"' in q
     assert 'building:use"="mixed"' in q
+
+
+def test_generic_buildings_query_targets_building_yes():
+    """generic_buildings recoge solo building=yes (footprints sin tipificar)."""
+    q = build_queries(BBOX)["generic_buildings"]
+    assert 'way["building"="yes"]' in q
+    assert 'relation["building"="yes"]' in q
+    # NO debe traer building=apartments u otros tipos ya capturados
+    assert 'building"="apartments"' not in q
+    assert 'building"="house"' not in q

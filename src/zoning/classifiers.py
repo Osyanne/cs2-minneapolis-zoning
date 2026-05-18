@@ -199,3 +199,37 @@ def classify_parking(tags: dict) -> str:
     if parking_type in ("multi-storey", "multistorey", "structure", "underground"):
         return "ramp"
     return "surface"
+
+
+# ── Generic building=yes — spatial join + area heurística ───────────────────
+
+# Mapa de landuse=* → CS2 key directa (para buildings sin tipo, clasificados
+# por el polígono landuse que los contiene espacialmente).
+LANDUSE_TO_CS2_KEY = {
+    "residential": "res_low_house",
+    "commercial":  "com_low",
+    "retail":      "com_low",
+    "industrial":  "industrial",
+    "office":      "office_low",
+}
+
+
+def classify_generic_building_by_area(area_m2: float) -> str:
+    """
+    Heurística defensiva para building=yes sin contexto de landuse.
+
+    Devuelve una CS2 key COMPLETA (no suffix). Pensado para footprints sin
+    tipificar donde el spatial join contra landuse no encontró match. Es
+    aproximada por diseño — un kiosco y una casa se diferencian solo por
+    área. Útil en zonas con OSM esparso (small towns LATAM/Asia/África).
+
+    Reglas:
+      area < 300 m²  → res_low_house  (casa / construcción pequeña)
+      area < 1500 m² → res_med        (edificio mediano genérico)
+      area ≥ 1500 m² → industrial     (footprint grande sin contexto)
+    """
+    if area_m2 < 300:
+        return "res_low_house"
+    if area_m2 < 1500:
+        return "res_med"
+    return "industrial"

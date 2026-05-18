@@ -196,4 +196,21 @@ out body geom;
 );
 out body geom;
 """.strip(),
+
+        # GENERIC_BUILDINGS — footprints sin tipificar (building=yes).
+        # En OSM real (sobre todo zonas con cobertura esparsa: LATAM, África,
+        # parte de Asia) la mayoría de los edificios se mapean como building=yes
+        # sin tag de tipo. Esta query los recoge para clasificarlos por spatial
+        # join contra landuse polygons (residential/commercial/retail/industrial/
+        # office) o por heurística de área si no hay landuse que los contenga.
+        # Se procesa al final del pipeline; dedup global por OSM id evita
+        # colisión con buildings ya capturados por queries específicas.
+        "generic_buildings": f"""
+[out:json][timeout:180];
+(
+  way["building"="yes"]({bbox});
+  relation["building"="yes"]({bbox});
+);
+out body geom;
+""".strip(),
     }

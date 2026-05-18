@@ -250,7 +250,7 @@ docs/
 |---|---|
 | **Módulos** | 3 módulos × 6 ciudades (Mpls completo + 5 solo zoning) — Transporte pendiente |
 | **Bounding box** | 6 ciudades, ver `cities.json` |
-| **Features totales** | ~372k (Mpls 192k + Amsterdam 89k + Trondheim 40k + Madison 37k + Charleston 14.5k + Mafra 105) |
+| **Features totales** | ~474k zoning (Mpls 204k + Amsterdam 138k + Madison 56k + Trondheim 43k + Charleston 32k + Mafra 431) — v3.3.4 generic-buildings pass |
 | **Tests** | 171 pasando |
 | **Última extracción** | 2026-05-18 |
 

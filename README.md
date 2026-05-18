@@ -250,8 +250,8 @@ docs/
 |---|---|
 | **Modules** | 3 modules × 6 cities (Mpls full + 5 zoning-only) — Transit pending |
 | **Bounding box** | 6 cities, see `cities.json` |
-| **Total features** | ~372k (Mpls 192k + Amsterdam 89k + Trondheim 40k + Madison 37k + Charleston 14.5k + Mafra 105) |
-| **Tests** | 171 passing |
+| **Total features** | ~474k zoning (Mpls 204k + Amsterdam 138k + Madison 56k + Trondheim 43k + Charleston 32k + Mafra 431) — v3.3.4 generic-buildings pass |
+| **Tests** | 176 passing |
 | **Last extracted** | 2026-05-18 |
 
 ---

@@ -111,7 +111,7 @@ wheels = [
 
 [[package]]
 name = "cs2-osm-toolkit"
-version = "3.3.3"
+version = "3.3.4"
 source = { editable = "." }
 dependencies = [
     { name = "requests" },

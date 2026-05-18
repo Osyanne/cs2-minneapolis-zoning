@@ -12,7 +12,9 @@ from zoning.classifiers import (
     classify_commercial,
     classify_office,
     classify_parking,
+    classify_generic_building_by_area,
     polygon_area_m2,
+    LANDUSE_TO_CS2_KEY,
     _effective_levels,
     _is_apartment_mixed,
     _is_low_rent_explicit,
@@ -290,3 +292,32 @@ def test_is_low_rent_explicit_detects_all_signals():
     assert _is_low_rent_explicit({"building": "council_house"})
     assert not _is_low_rent_explicit({})
     assert not _is_low_rent_explicit({"building": "apartments"})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# classify_generic_building_by_area — fallback para building=yes sin landuse
+# ══════════════════════════════════════════════════════════════════════════════
+
+def test_generic_building_small_is_low_house():
+    """Footprint pequeño (<300 m²) → casa baja densidad."""
+    assert classify_generic_building_by_area(80) == "res_low_house"
+    assert classify_generic_building_by_area(299) == "res_low_house"
+
+def test_generic_building_medium_is_med_density():
+    """Footprint mediano (300–1500 m²) → media densidad residencial."""
+    assert classify_generic_building_by_area(300) == "res_med"
+    assert classify_generic_building_by_area(1000) == "res_med"
+    assert classify_generic_building_by_area(1499) == "res_med"
+
+def test_generic_building_large_is_industrial():
+    """Footprint grande (≥1500 m²) sin contexto → industrial."""
+    assert classify_generic_building_by_area(1500) == "industrial"
+    assert classify_generic_building_by_area(5000) == "industrial"
+
+def test_landuse_map_covers_main_uses():
+    """LANDUSE_TO_CS2_KEY mapea las 5 landuses principales a CS2 keys válidas."""
+    assert LANDUSE_TO_CS2_KEY["residential"] == "res_low_house"
+    assert LANDUSE_TO_CS2_KEY["commercial"] == "com_low"
+    assert LANDUSE_TO_CS2_KEY["retail"] == "com_low"
+    assert LANDUSE_TO_CS2_KEY["industrial"] == "industrial"
+    assert LANDUSE_TO_CS2_KEY["office"] == "office_low"

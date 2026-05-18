@@ -423,5 +423,72 @@ soportar múltiples ciudades via Featured Cities Pack.
 - Promoción de cities zoning-only a fully-featured (cuando acumulen 5+
   requests por vial/services).
 
+---
+
+## Sección 17 — Generic buildings: spatial-join + heurística (v3.3.4)
+
+### Problema
+
+Al procesar Mafra, SC (Brasil) en v3.3.3 quedó claro que el extractor de zoning
+solo recogía **24%** de los buildings tagged en OSM (105 / 427 ways). El resto
+estaba como `building=yes` sin más contexto — el extractor los ignoraba porque
+no encajaban en ninguna categoría específica (apartments, residential_subtypes,
+commercial, office, industrial).
+
+Esto reflejaba un patrón conocido de OSM: en regiones con cobertura sparse
+(small-town LATAM, África, parte de Asia) la mayoría de los building footprints
+están como `building=yes` por imports masivos sin enriquecimiento posterior.
+Para esas zonas, una visualización de zoning honesta requería poder **inferir**
+la zona de los footprints sin tipificar.
+
+### Solución
+
+Nuevo paso 8 del pipeline `extract-zoning`:
+
+1. **Nueva query `generic_buildings`** que recoge `way["building"="yes"]` y
+   `relation["building"="yes"]` del bbox.
+2. **Dedup global por OSM id** — buildings ya capturados por queries
+   específicas se ignoran (los tags específicos siempre ganan).
+3. **Spatial join contra landuse polygons** — para cada generic building:
+   - Construir un `STRtree` con los polígonos `landuse=*` ya extraídos por
+     queries existentes (residential, commercial, retail, industrial, office).
+   - Buscar el polígono que contiene el centroide del building.
+   - Si hay match → clasificar por `LANDUSE_TO_CS2_KEY` (mapa landuse→CS2 key).
+4. **Heurística de área como fallback** — si no hay landuse que lo contenga:
+   - `< 300 m²`   → `res_low_house` (casa pequeña)
+   - `300–1500 m²` → `res_med` (edificio mediano)
+   - `≥ 1500 m²` → `industrial` (footprint grande sin contexto = nave/galpón)
+
+### Impacto medido (re-extract 2026-05-18 PM)
+
+| City | v3.3.3 polygons | v3.3.4 polygons | Δ | generic+ (landuse / area) |
+|------|-----------------|-----------------|---|---------------------------|
+| Minneapolis | 81,825 | 204,470 | +150% | 122,633 (57k / 66k) |
+| Amsterdam | 89,228 | 137,559 | +54% | 48,331 (42k / 6k) |
+| Madison | 36,738 | 55,889 | +52% | 19,151 (17k / 2k) |
+| Charleston | 14,495 | 31,957 | +120% | 17,461 (9k / 8k) |
+| Trondheim | 40,339 | 43,499 | +8% | 3,160 (1.4k / 1.8k) |
+| Mafra | 105 | 431 | +310% | 326 (4 / 322) |
+
+**Lectura:** ciudades con landuse polygons granulares (US/EU) ganan
+clasificación por spatial join (lo más confiable). Ciudades con landuse
+sparse (LATAM small-town) dependen más de la heurística de área. En todas
+las ciudades el delta es positivo — el algoritmo es defensivo (solo añade
+buildings no clasificados antes; nunca sobreescribe).
+
+### Diseño defensivo
+
+- **Tags específicos siempre ganan**: si una way tiene `building=apartments`,
+  pasa por `classify_apartment` y nunca llega al paso generic.
+- **Cero falsos positivos en cities granulares**: en Mpls los apartments,
+  houses, terraces, etc. ya están bien clasificados por su tag específico.
+- **Honestidad de signal**: el output incluye `generic+` con breakdown
+  landuse vs área heurística — el usuario puede ver qué fracción del map
+  viene de inferencia.
+
+Ver implementación: `src/zoning/extract.py` (`_process_generic_buildings`),
+`src/zoning/classifiers.py` (`classify_generic_building_by_area`,
+`LANDUSE_TO_CS2_KEY`).
+
 Ver spec: `docs/specs/2026-05-17-featured-cities-pack-design.md`
 Ver plan: `docs/plans/2026-05-17-featured-cities-pack.md`
