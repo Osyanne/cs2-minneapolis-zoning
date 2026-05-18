@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Reorganizar `cs2-minneapolis-zoning` en un toolkit modular renombrado a `cs2-minneapolis-osm-toolkit`, con sub-paquetes Python por módulo, prebuilts JS distribuidos via GitHub Releases, y UI del visualizer con module pills + master toggles + control de fondo para alternar rápidamente entre vistas.
+**Goal:** Reorganizar `cs2-minneapolis-zoning` en un toolkit modular renombrado a `cs2-osm-toolkit`, con sub-paquetes Python por módulo, prebuilts JS distribuidos via GitHub Releases, y UI del visualizer con module pills + master toggles + control de fondo para alternar rápidamente entre vistas.
 
 **Architecture:** Refactor en 5 fases secuenciales. Fase A muta la estructura del código Python (sub-paquetes + renames + imports). Fase B saca los prebuilts JS del git tracking. Fase C añade UI nueva al visualizer. Fase D reescribe documentación. Fase E ejecuta el rename de GitHub + carpeta local + cierre. Cada fase produce working software (los tests pasan al final de cada fase).
 
@@ -276,7 +276,7 @@ git commit -m "refactor(toolkit): actualizar imports al nuevo layout de sub-pack
 
 ```toml
 [project]
-name = "cs2-minneapolis-osm-toolkit"
+name = "cs2-osm-toolkit"
 version = "3.1.0"
 description = "GIS toolkit modular: extract OpenStreetMap data for Cities: Skylines 2"
 requires-python = ">=3.11"
@@ -619,7 +619,7 @@ Los archivos `datos_zonificacion.js` (~27 MB) y `datos_vial.js` (~25 MB) NO est�
 
 ### Opción A: Descargar desde GitHub Releases (recomendado)
 
-1. Ir a https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/releases
+1. Ir a https://github.com/Osyanne/cs2-osm-toolkit/releases
 2. Descargar `datos_zonificacion.js` y `datos_vial.js` desde la última release
 3. Colocarlos en este directorio (`visualizer/`)
 
@@ -1254,8 +1254,8 @@ Output: `visualizer/datos_vial.js` (~25 MB)
 ### Setup
 
 ```bash
-git clone https://github.com/Osyanne/cs2-minneapolis-osm-toolkit.git
-cd cs2-minneapolis-osm-toolkit/src
+git clone https://github.com/Osyanne/cs2-osm-toolkit.git
+cd cs2-osm-toolkit/src
 uv sync
 ```
 
@@ -1264,7 +1264,7 @@ uv sync
 The prebuilt `datos_*.js` files (~50 MB total) are **not** in this repo. Two ways to get them:
 
 **Option A — Download from GitHub Releases** (recommended):
-1. Go to https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/releases
+1. Go to https://github.com/Osyanne/cs2-osm-toolkit/releases
 2. Download `datos_zonificacion.js` and `datos_vial.js` from the latest release
 3. Place them in `visualizer/`
 
@@ -1416,8 +1416,8 @@ Salida: `visualizer/datos_vial.js` (~25 MB)
 ### Setup
 
 ```bash
-git clone https://github.com/Osyanne/cs2-minneapolis-osm-toolkit.git
-cd cs2-minneapolis-osm-toolkit/src
+git clone https://github.com/Osyanne/cs2-osm-toolkit.git
+cd cs2-osm-toolkit/src
 uv sync
 ```
 
@@ -1426,7 +1426,7 @@ uv sync
 Los archivos prebuilt `datos_*.js` (~50 MB en total) **no están** en este repo. Dos opciones:
 
 **Opción A — Descargar desde GitHub Releases** (recomendado):
-1. Ir a https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/releases
+1. Ir a https://github.com/Osyanne/cs2-osm-toolkit/releases
 2. Descargar `datos_zonificacion.js` y `datos_vial.js` desde la última release
 3. Colocarlos en `visualizer/`
 
@@ -1539,7 +1539,7 @@ Para cada match:
 - Referencias a `vial_classifiers` → `vial.classifiers`
 - Referencias a `extract_zoning` → `zoning.extract` (o `extract-zoning` para el CLI)
 - Referencias a `extract_vial` → `vial.extract` (o `extract-vial` para el CLI)
-- Referencias a `cs2-minneapolis-zoning` (nombre del repo) → `cs2-minneapolis-osm-toolkit`
+- Referencias a `cs2-minneapolis-zoning` (nombre del repo) → `cs2-osm-toolkit`
 
 - [ ] **Step 4: Commit**
 
@@ -1567,10 +1567,10 @@ Reemplazos a aplicar (con `Edit` tool o manualmente):
 
 | Buscar | Reemplazar por |
 |---|---|
-| `cs2-minneapolis-zoning` | `cs2-minneapolis-osm-toolkit` |
+| `cs2-minneapolis-zoning` | `cs2-osm-toolkit` |
 | `Minneapolis Zoning Visualizer` | `Minneapolis OSM Toolkit` |
 | `v3.0` | `v3.1` (donde se refiere a la versión del repo) |
-| `github.com/Osyanne/cs2-minneapolis-zoning` | `github.com/Osyanne/cs2-minneapolis-osm-toolkit` |
+| `github.com/Osyanne/cs2-osm-toolkit` | `github.com/Osyanne/cs2-osm-toolkit` |
 
 - [ ] **Step 2: Para los drafts que mencionan SOLO zonificación (`reddit_01_CitiesSkylines2.md`, `reddit_02_CitiesSkylines.md`, etc.), añadir un párrafo o sección que mencione el nuevo módulo vial**
 
@@ -1635,13 +1635,13 @@ Estos archivos NO se commitean (están en `.gitignore`). Se usan para Step 3.
 - [ ] **Step 1: Rename via `gh` CLI**
 
 ```bash
-gh repo rename cs2-minneapolis-osm-toolkit --repo Osyanne/cs2-minneapolis-zoning --confirm
+gh repo rename cs2-osm-toolkit --repo Osyanne/cs2-minneapolis-zoning --confirm
 ```
 
 Si `gh` no está disponible o falla, hacer manualmente:
-1. Ir a https://github.com/Osyanne/cs2-minneapolis-zoning/settings
+1. Ir a https://github.com/Osyanne/cs2-osm-toolkit/settings
 2. Scroll hasta "Repository name"
-3. Cambiar a `cs2-minneapolis-osm-toolkit`
+3. Cambiar a `cs2-osm-toolkit`
 4. Click "Rename"
 
 GitHub mantiene redirects desde el nombre viejo, así que cualquier link existente sigue funcionando.
@@ -1649,7 +1649,7 @@ GitHub mantiene redirects desde el nombre viejo, así que cualquier link existen
 - [ ] **Step 2: Actualizar el remote local**
 
 ```bash
-git remote set-url origin https://github.com/Osyanne/cs2-minneapolis-osm-toolkit.git
+git remote set-url origin https://github.com/Osyanne/cs2-osm-toolkit.git
 git remote -v
 # Expected: origin con la URL nueva
 ```
@@ -1697,7 +1697,7 @@ gh release create v3.1 \
 - 🛣 **New Road Network module** (108,825 features in 6 CS2 categories: Highway / Major / Minor / Local / Pedestrian / Bike) added in Sesión 2
 - 🎛️ **New UI**: Module pills + master toggles + background mode (Hidden / Faded / Full) for fast view switching
 - 📦 **Modular structure**: Python sub-packages (\`shared/\`, \`zoning/\`, \`vial/\`)
-- 🏷️ **Renamed**: \`cs2-minneapolis-zoning\` → \`cs2-minneapolis-osm-toolkit\` (redirects preserved)
+- 🏷️ **Renamed**: \`cs2-minneapolis-zoning\` → \`cs2-osm-toolkit\` (redirects preserved)
 - 🚀 **Prebuilts via Releases**: Lighter repo (50 MB → <2 MB), explicit versioning
 
 ## Downloads (prebuilts)
@@ -1720,7 +1720,7 @@ EOF
 ```
 
 Si `gh` no está disponible, hacer manualmente desde GitHub:
-1. Ir a https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/releases/new
+1. Ir a https://github.com/Osyanne/cs2-osm-toolkit/releases/new
 2. Tag: `v3.1`
 3. Title: "v3.1 — Toolkit reorganization + Road Network Module"
 4. Adjuntar `visualizer/datos_zonificacion.js` y `visualizer/datos_vial.js` como assets
@@ -1733,14 +1733,14 @@ gh release view v3.1
 # Expected: muestra los 2 assets adjuntados
 ```
 
-O ir a https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/releases/tag/v3.1
+O ir a https://github.com/Osyanne/cs2-osm-toolkit/releases/tag/v3.1
 
 ---
 
 ### Task E.4: Renombrar carpeta local + actualizar referencias
 
 **Files:**
-- Move: `C:\Users\osyanne\Documents\Claude\Projects\Proyecto mineapolis\cs2-minneapolis-zoning\` → `cs2-minneapolis-osm-toolkit\`
+- Move: `C:\Users\osyanne\Documents\Claude\Projects\Proyecto mineapolis\cs2-minneapolis-zoning\` → `cs2-osm-toolkit\`
 - Modify: Obsidian notes + memoria persistente
 
 - [ ] **Step 1: Cerrar cualquier proceso usando la carpeta**
@@ -1751,17 +1751,17 @@ Confirmar que no hay terminales, IDEs, o procesos con la carpeta abierta. Si VS 
 
 ```bash
 cd "/c/Users/osyanne/Documents/Claude/Projects/Proyecto mineapolis"
-mv cs2-minneapolis-zoning cs2-minneapolis-osm-toolkit
+mv cs2-minneapolis-zoning cs2-osm-toolkit
 ```
 
 - [ ] **Step 3: Verificar que git sigue funcionando con la nueva carpeta**
 
 ```bash
-cd "/c/Users/osyanne/Documents/Claude/Projects/Proyecto mineapolis/cs2-minneapolis-osm-toolkit"
+cd "/c/Users/osyanne/Documents/Claude/Projects/Proyecto mineapolis/cs2-osm-toolkit"
 git status
 # Expected: working tree clean, on main
 git remote -v
-# Expected: origin con cs2-minneapolis-osm-toolkit URL
+# Expected: origin con cs2-osm-toolkit URL
 ```
 
 - [ ] **Step 4: Actualizar Obsidian (paths absolutos)**
@@ -1770,14 +1770,14 @@ Editar `C:\Users\osyanne\Documents\Brain\01-Proyectos\CS2-Mineapolis\🏙 CS2-Mi
 
 Buscar:
 ```
-**Repo:** https://github.com/Osyanne/cs2-minneapolis-zoning (v3.0 push 2026-05-15)
+**Repo:** https://github.com/Osyanne/cs2-osm-toolkit (v3.0 push 2026-05-15)
 **Carpeta local:** `C:\Users\osyanne\Documents\Claude\Projects\Proyecto mineapolis\cs2-minneapolis-zoning\`
 ```
 
 Reemplazar por:
 ```
-**Repo:** https://github.com/Osyanne/cs2-minneapolis-osm-toolkit (v3.1 push 2026-05-15)
-**Carpeta local:** `C:\Users\osyanne\Documents\Claude\Projects\Proyecto mineapolis\cs2-minneapolis-osm-toolkit\`
+**Repo:** https://github.com/Osyanne/cs2-osm-toolkit (v3.1 push 2026-05-15)
+**Carpeta local:** `C:\Users\osyanne\Documents\Claude\Projects\Proyecto mineapolis\cs2-osm-toolkit\`
 ```
 
 - [ ] **Step 5: Actualizar memoria persistente**
@@ -1786,16 +1786,16 @@ Editar `C:\Users\osyanne\.claude\projects\C--Users-osyanne\memory\proyecto_cs2_m
 
 Buscar:
 ```
-**Repo:** https://github.com/Osyanne/cs2-minneapolis-zoning (público, v3.0 pusheado 2026-05-15)
+**Repo:** https://github.com/Osyanne/cs2-osm-toolkit (público, v3.0 pusheado 2026-05-15)
 
 **Workspace local:** `C:\Users\osyanne\Documents\Claude\Projects\Proyecto mineapolis\cs2-minneapolis-zoning\`
 ```
 
 Reemplazar por:
 ```
-**Repo:** https://github.com/Osyanne/cs2-minneapolis-osm-toolkit (público, v3.1 pusheado 2026-05-15, renombrado de cs2-minneapolis-zoning)
+**Repo:** https://github.com/Osyanne/cs2-osm-toolkit (público, v3.1 pusheado 2026-05-15, renombrado de cs2-minneapolis-zoning)
 
-**Workspace local:** `C:\Users\osyanne\Documents\Claude\Projects\Proyecto mineapolis\cs2-minneapolis-osm-toolkit\`
+**Workspace local:** `C:\Users\osyanne\Documents\Claude\Projects\Proyecto mineapolis\cs2-osm-toolkit\`
 ```
 
 - [ ] **Step 6: Cualquier otra mención al path/nombre viejo en Obsidian o memoria**
@@ -1805,7 +1805,7 @@ grep -r "cs2-minneapolis-zoning" "/c/Users/osyanne/Documents/Brain/01-Proyectos/
 grep -r "cs2-minneapolis-zoning" "/c/Users/osyanne/.claude/projects/C--Users-osyanne/memory/" 2>/dev/null
 ```
 
-Reemplazar cada match por `cs2-minneapolis-osm-toolkit`.
+Reemplazar cada match por `cs2-osm-toolkit`.
 
 - [ ] **Step 7: No hay commit en el repo de código — estos cambios son en Obsidian/memoria personales**
 
@@ -1818,7 +1818,7 @@ Los archivos de Obsidian y memoria persistente NO viven en el repo del toolkit.
 - [ ] **Step 1: Correr tests una última vez**
 
 ```bash
-cd "/c/Users/osyanne/Documents/Claude/Projects/Proyecto mineapolis/cs2-minneapolis-osm-toolkit/src"
+cd "/c/Users/osyanne/Documents/Claude/Projects/Proyecto mineapolis/cs2-osm-toolkit/src"
 uv run pytest ../tests/ -v 2>&1 | tail -5
 # Expected: 72 passed in <1s
 ```
@@ -1826,7 +1826,7 @@ uv run pytest ../tests/ -v 2>&1 | tail -5
 - [ ] **Step 2: Smoke test browser final**
 
 ```bash
-cd "/c/Users/osyanne/Documents/Claude/Projects/Proyecto mineapolis/cs2-minneapolis-osm-toolkit/visualizer"
+cd "/c/Users/osyanne/Documents/Claude/Projects/Proyecto mineapolis/cs2-osm-toolkit/visualizer"
 python -m http.server 8080
 # Abrir http://localhost:8080/index.html
 # Verificar: módulo pills + master toggles + fondo control funcionan
@@ -1838,7 +1838,7 @@ Ctrl+C para apagar el server cuando termines.
 - [ ] **Step 3: Verificar el remoto en GitHub**
 
 ```bash
-gh repo view Osyanne/cs2-minneapolis-osm-toolkit
+gh repo view Osyanne/cs2-osm-toolkit
 # Expected: muestra info del repo renombrado, branch main al día
 ```
 

@@ -1,7 +1,7 @@
 # Featured Cities Pack — Design Spec
 
 **Fecha:** 2026-05-17
-**Workspace actual:** `cs2-minneapolis-zoning/` (repo: `cs2-minneapolis-osm-toolkit`, rename deferido)
+**Workspace actual:** `cs2-minneapolis-zoning/` (repo: `cs2-osm-toolkit`, rename deferido)
 **Predecesor:** [Sesión 3 — Módulo Servicios](../plans/2026-05-16-modulo-servicios.md)
 **Versión target:** v3.3
 
@@ -160,7 +160,7 @@ Hace fácil el request al user y le da al owner toda la info necesaria para corr
 
 ### 2.6 Repo identity — DEFERRED
 
-**No se renombra en este scope.** El repo se queda como `cs2-minneapolis-osm-toolkit` para preservar el SEO/momentum de los posts Reddit v3.2 actuales. El rename a `cs2-osm-toolkit` se hace en una sesión futura cuando el tráfico de los posts actuales decaiga (estimado: 4-6 semanas post-publicación).
+**No se renombra en este scope.** El repo se queda como `cs2-osm-toolkit` para preservar el SEO/momentum de los posts Reddit v3.2 actuales. El rename a `cs2-osm-toolkit` se hace en una sesión futura cuando el tráfico de los posts actuales decaiga (estimado: 4-6 semanas post-publicación).
 
 Implicación: el README/landing va a tener un mismatch leve entre nombre del repo ("Minneapolis") y contenido ("5 ciudades, Minneapolis hero + 4 nuevas en zoning"). Se mitiga con un párrafo en README explicando "el toolkit nació para Minneapolis, ahora soporta 5 ciudades — rename pendiente".
 
@@ -310,7 +310,7 @@ Habilita la modularidad por demanda sin cambios al pipeline.
 ### 6.1 GitHub Pages setup
 
 - **Source:** `main` branch, directorio `/visualizer`
-- **URL final:** `https://osyanne.github.io/cs2-minneapolis-osm-toolkit/`
+- **URL final:** `https://osyanne.github.io/cs2-osm-toolkit/`
 - **Custom domain:** no en este scope (eventualmente en Phase 3)
 - **Branch de trabajo:** `feature/featured-cities-pack` → PR a main cuando esté smoke-tested
 - **Versioning:** v3.3 (badge en READMEs + CHANGELOG)

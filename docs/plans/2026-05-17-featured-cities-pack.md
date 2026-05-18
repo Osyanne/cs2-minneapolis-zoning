@@ -1594,7 +1594,7 @@ MODULE_LABELS = {
     "services": "Servicios",
 }
 
-REPO_URL = "https://github.com/Osyanne/cs2-minneapolis-osm-toolkit"
+REPO_URL = "https://github.com/Osyanne/cs2-osm-toolkit"
 ISSUE_NEW_URL = f"{REPO_URL}/issues/new?template=city-request.yml"
 
 
@@ -1933,7 +1933,7 @@ function showError(msg) {
       <h1>⚠ Error</h1>
       <p>${msg}</p>
       <p><a href="index.html" style="color: #58a6ff;">← Volver a landing</a> · 
-         <a href="https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/issues/new" 
+         <a href="https://github.com/Osyanne/cs2-osm-toolkit/issues/new" 
             style="color: #58a6ff;" target="_blank">Report issue</a></p>
     </div>`;
 }
@@ -2306,7 +2306,7 @@ Después del header/intro, agregar (o reemplazar si existe sección similar):
 
 The toolkit now supports **5 cities** out-of-the-box, accessible via the hosted viewer at:
 
-**https://osyanne.github.io/cs2-minneapolis-osm-toolkit/**
+**https://osyanne.github.io/cs2-osm-toolkit/**
 
 | City | Country | Modules |
 |------|---------|---------|
@@ -2316,11 +2316,11 @@ The toolkit now supports **5 cities** out-of-the-box, accessible via the hosted 
 | Amsterdam | Netherlands | Zoning |
 | Madison, WI | USA | Zoning |
 
-Vial + services for the 4 newer cities are **on-demand**: open a [City Request issue](https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/issues/new?template=city-request.yml) requesting them, and we'll generate.
+Vial + services for the 4 newer cities are **on-demand**: open a [City Request issue](https://github.com/Osyanne/cs2-osm-toolkit/issues/new?template=city-request.yml) requesting them, and we'll generate.
 
 ### Adding your city
 
-Open a [City Request issue](https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/issues/new?template=city-request.yml) with the bbox + name. We'll generate the zoning prebuilt and publish (~30-60 min turnaround when active).
+Open a [City Request issue](https://github.com/Osyanne/cs2-osm-toolkit/issues/new?template=city-request.yml) with the bbox + name. We'll generate the zoning prebuilt and publish (~30-60 min turnaround when active).
 
 ### Repo rename — pending
 
@@ -2453,7 +2453,7 @@ Expected: branch pushed sin errores.
 
 - [ ] **Step 2: Enable GitHub Pages via the GitHub UI**
 
-Open `https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/settings/pages` in browser.
+Open `https://github.com/Osyanne/cs2-osm-toolkit/settings/pages` in browser.
 
 Config:
 - Source: **Deploy from a branch**
@@ -2462,11 +2462,11 @@ Config:
 
 Save.
 
-GitHub will show a "Your site is live at https://osyanne.github.io/cs2-minneapolis-osm-toolkit/" después de ~1-2 min.
+GitHub will show a "Your site is live at https://osyanne.github.io/cs2-osm-toolkit/" después de ~1-2 min.
 
 - [ ] **Step 3: Verify deployment**
 
-Open `https://osyanne.github.io/cs2-minneapolis-osm-toolkit/` (puede tardar 1-5 min en propagar).
+Open `https://osyanne.github.io/cs2-osm-toolkit/` (puede tardar 1-5 min en propagar).
 
 Expected: landing page con 5 cards.
 
@@ -2474,29 +2474,29 @@ Expected: landing page con 5 cards.
 
 The `map.html` does `fetch("cities.json")` (mismo dir, copia deployada por generate-landing).
 
-Open browser DevTools → Network tab → load `https://osyanne.github.io/cs2-minneapolis-osm-toolkit/map.html?city=minneapolis`.
+Open browser DevTools → Network tab → load `https://osyanne.github.io/cs2-osm-toolkit/map.html?city=minneapolis`.
 
 Verify:
-- Request a `https://osyanne.github.io/cs2-minneapolis-osm-toolkit/cities.json` → status **200** (no 404)
-- Request a `https://osyanne.github.io/cs2-minneapolis-osm-toolkit/cities/minneapolis/manifest.json` → **200**
-- 3 requests a `https://osyanne.github.io/cs2-minneapolis-osm-toolkit/cities/minneapolis/datos_*.js?v=<hash>` → todos **200**
+- Request a `https://osyanne.github.io/cs2-osm-toolkit/cities.json` → status **200** (no 404)
+- Request a `https://osyanne.github.io/cs2-osm-toolkit/cities/minneapolis/manifest.json` → **200**
+- 3 requests a `https://osyanne.github.io/cs2-osm-toolkit/cities/minneapolis/datos_*.js?v=<hash>` → todos **200**
 
 Si alguno retorna 404: verificar que `visualizer/cities.json` existe (debió generarse en Task 12 con `generate-landing`). Si no existe, correr `cd src && uv run generate-landing && git add visualizer/cities.json && git commit -m "fix: deploy cities.json" && git push`.
 
 - [ ] **Step 5: Smoke test all 5 cities on deployed URL**
 
 For each slug:
-- `https://osyanne.github.io/cs2-minneapolis-osm-toolkit/map.html?city=minneapolis`
-- `https://osyanne.github.io/cs2-minneapolis-osm-toolkit/map.html?city=manhattan`
-- `https://osyanne.github.io/cs2-minneapolis-osm-toolkit/map.html?city=tokyo`
-- `https://osyanne.github.io/cs2-minneapolis-osm-toolkit/map.html?city=amsterdam`
-- `https://osyanne.github.io/cs2-minneapolis-osm-toolkit/map.html?city=madison`
+- `https://osyanne.github.io/cs2-osm-toolkit/map.html?city=minneapolis`
+- `https://osyanne.github.io/cs2-osm-toolkit/map.html?city=manhattan`
+- `https://osyanne.github.io/cs2-osm-toolkit/map.html?city=tokyo`
+- `https://osyanne.github.io/cs2-osm-toolkit/map.html?city=amsterdam`
+- `https://osyanne.github.io/cs2-osm-toolkit/map.html?city=madison`
 
 Verify cada uno carga, console limpia, mapa renderea.
 
 - [ ] **Step 6: Verify slug-inválido redirect**
 
-`https://osyanne.github.io/cs2-minneapolis-osm-toolkit/map.html?city=atlantis`
+`https://osyanne.github.io/cs2-osm-toolkit/map.html?city=atlantis`
 
 Expected: redirect a landing.
 
@@ -2536,7 +2536,7 @@ gh pr create --title "Featured Cities Pack (v3.3) — multi-city support" --body
 - Minneapolis preserva los 3 módulos (hero)
 - Registro `cities.json` + `manifest.json` per-city
 - Visualizer refactor: landing (index.html) + viewer multi-city (map.html)
-- GH Pages activo en `https://osyanne.github.io/cs2-minneapolis-osm-toolkit/`
+- GH Pages activo en `https://osyanne.github.io/cs2-osm-toolkit/`
 
 Ver spec completo: `docs/specs/2026-05-17-featured-cities-pack-design.md`
 Ver plan ejecutado: `docs/plans/2026-05-17-featured-cities-pack.md`
@@ -2564,7 +2564,7 @@ EOF
 
 - [ ] **Step 4: After PR is open, switch GitHub Pages source to `main`**
 
-Una vez el PR sea reviewed/merged a main, volver a `https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/settings/pages`:
+Una vez el PR sea reviewed/merged a main, volver a `https://github.com/Osyanne/cs2-osm-toolkit/settings/pages`:
 
 - Cambiar branch a **main**
 - Folder: **/visualizer**
@@ -2572,7 +2572,7 @@ Una vez el PR sea reviewed/merged a main, volver a `https://github.com/Osyanne/c
 
 - [ ] **Step 5: Verify deployment on main**
 
-Recargar `https://osyanne.github.io/cs2-minneapolis-osm-toolkit/`. Esperar 1-5 min.
+Recargar `https://osyanne.github.io/cs2-osm-toolkit/`. Esperar 1-5 min.
 
 Expected: misma landing + las 5 ciudades funcionan.
 

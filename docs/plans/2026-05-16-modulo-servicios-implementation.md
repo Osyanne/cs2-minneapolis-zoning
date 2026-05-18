@@ -1681,7 +1681,7 @@ uv run extract-services
 ```
 
 **Descargar prebuilt:**
-[`datos_servicios.js` v3.1](https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/releases/download/v3.1/datos_servicios.js)
+[`datos_servicios.js` v3.1](https://github.com/Osyanne/cs2-osm-toolkit/releases/download/v3.1/datos_servicios.js)
 
 **Notas:**
 - Polígonos siempre visibles. Markers (POIs sin polígono) se ocultan en zoom < 12.
@@ -1712,7 +1712,7 @@ uv run extract-services
 ```
 
 **Download prebuilt:**
-[`datos_servicios.js` v3.1](https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/releases/download/v3.1/datos_servicios.js)
+[`datos_servicios.js` v3.1](https://github.com/Osyanne/cs2-osm-toolkit/releases/download/v3.1/datos_servicios.js)
 
 **Notes:**
 - Polygons always visible. Markers (POIs without polygon) hide at zoom < 12.

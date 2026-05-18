@@ -16,7 +16,7 @@
 
 The toolkit now supports **6 cities** out-of-the-box, accessible via the hosted viewer at:
 
-**https://osyanne.github.io/cs2-minneapolis-osm-toolkit/**
+**https://osyanne.github.io/cs2-osm-toolkit/**
 
 | City | Country | Modules |
 |------|---------|---------|
@@ -27,11 +27,11 @@ The toolkit now supports **6 cities** out-of-the-box, accessible via the hosted 
 | Madison, WI | USA | Zoning |
 | Charleston, SC | USA | Zoning |
 
-Vial + services for the 5 newer cities are **on-demand**: open a [City Request issue](https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/issues/new?template=city-request.yml) requesting them, and we'll generate.
+Vial + services for the 5 newer cities are **on-demand**: open a [City Request issue](https://github.com/Osyanne/cs2-osm-toolkit/issues/new?template=city-request.yml) requesting them, and we'll generate.
 
 ### Adding your city
 
-Open a [City Request issue](https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/issues/new?template=city-request.yml) with the bbox + name. We'll generate the zoning prebuilt and publish (~30-60 min turnaround when active).
+Open a [City Request issue](https://github.com/Osyanne/cs2-osm-toolkit/issues/new?template=city-request.yml) with the bbox + name. We'll generate the zoning prebuilt and publish (~30-60 min turnaround when active).
 
 ### Repo rename — pending
 
@@ -45,12 +45,12 @@ This repo will eventually be renamed `cs2-osm-toolkit` to reflect multi-city sup
 
 Two options:
 
-**Option 1 — Hosted (zero setup, no install):** Visit https://osyanne.github.io/cs2-minneapolis-osm-toolkit/ in your browser. Click any of the 5 city cards to open the map.
+**Option 1 — Hosted (zero setup, no install):** Visit https://osyanne.github.io/cs2-osm-toolkit/ in your browser. Click any of the 5 city cards to open the map.
 
 **Option 2 — Local clone (need any tiny HTTP server):** Clone the repo, then serve the `visualizer/` folder over HTTP:
 
 ```bash
-cd cs2-minneapolis-osm-toolkit/visualizer
+cd cs2-osm-toolkit/visualizer
 python -m http.server 8000
 ```
 
@@ -145,8 +145,8 @@ Output: `visualizer/cities/minneapolis/datos_servicios.js` (~1.3 MB)
 ### Setup
 
 ```bash
-git clone https://github.com/Osyanne/cs2-minneapolis-osm-toolkit.git
-cd cs2-minneapolis-osm-toolkit/src
+git clone https://github.com/Osyanne/cs2-osm-toolkit.git
+cd cs2-osm-toolkit/src
 uv sync
 ```
 

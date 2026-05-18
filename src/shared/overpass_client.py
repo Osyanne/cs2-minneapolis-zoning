@@ -44,7 +44,7 @@ def _try_endpoint(endpoint: str, query: str, label: str) -> dict[str, Any]:
         endpoint,
         data={"data": query},
         timeout=HTTP_TIMEOUT_S,
-        headers={"User-Agent": "cs2-minneapolis-zoning/2.0 (educational use)"},
+        headers={"User-Agent": "cs2-osm-toolkit/3.3.1 (educational use)"},
     )
     response.raise_for_status()
     payload = response.json()

@@ -106,6 +106,6 @@ This is on the list for future improvement.
 
 ## Still stuck?
 
-Open an issue at [github.com/Osyanne/cs2-minneapolis-osm-toolkit/issues](https://github.com/Osyanne/cs2-minneapolis-osm-toolkit/issues).
+Open an issue at [github.com/Osyanne/cs2-osm-toolkit/issues](https://github.com/Osyanne/cs2-osm-toolkit/issues).
 
 Include: what step you were on, the exact error message (copy-paste it, don't screenshot if you can help it), your OS and Python version, and your bbox if relevant. The more detail, the faster it gets resolved.

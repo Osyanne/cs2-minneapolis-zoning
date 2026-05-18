@@ -48,7 +48,7 @@ Data source: OpenStreetMap via Overpass API"
 
 # Point to GitHub remote
 git branch -M main
-git remote add origin https://github.com/Osyanne/cs2-minneapolis-zoning.git
+git remote add origin https://github.com/Osyanne/cs2-osm-toolkit.git
 
 # Push
 git push -u origin main
@@ -95,7 +95,7 @@ To host the visualizer as a live demo:
 3. Branch: `main`, Folder: `/visualizer`
 4. Save
 
-The live map will be at: `https://osyanne.github.io/cs2-minneapolis-zoning/`
+The live map will be at: `https://osyanne.github.io/cs2-osm-toolkit/`
 
 Note: The live demo will show an empty map until visitors run `extract_zoning.py` themselves (the data file is excluded from git). You can add a note about this in the visualizer or show `sample_output.js` as the default.
 

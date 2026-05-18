@@ -17,7 +17,7 @@ Adicionalmente, el visualizer no permite cambiar rápidamente entre vistas: para
 Reorganizar el proyecto en tres dimensiones:
 
 1. **Estructura del repo** — sub-paquetes Python por módulo, tests paralelos, prebuilts fuera del repo.
-2. **Branding** — renombrar repo a `cs2-minneapolis-osm-toolkit`.
+2. **Branding** — renombrar repo a `cs2-osm-toolkit`.
 3. **Visualizer UX** — añadir "module pills" multi-select + master toggles en leyenda + control de fondo (3 estados) para alternar rápidamente entre vistas.
 
 Sin regresión de funcionalidad existente. Los 72 tests deben seguir pasando.
@@ -27,7 +27,7 @@ Sin regresión de funcionalidad existente. Los 72 tests deben seguir pasando.
 ## Sección 1 — Estructura nueva del repo
 
 ```
-cs2-minneapolis-osm-toolkit/
+cs2-osm-toolkit/
 ├── README.md                    # rewritten — "toolkit GIS modular para CS2"
 ├── README.es.md                 # idem en español
 ├── METHODOLOGY.md               # actualizado (cabecera + sección general)
@@ -264,10 +264,10 @@ El plan de implementación detalla los pasos. Aquí solo los hitos:
 19. Actualizar Obsidian + memoria persistente con nuevo path/nombre
 
 ### Fase E — GitHub
-20. Rename repo en GitHub: Settings → Repository name → `cs2-minneapolis-osm-toolkit`
-21. `git remote set-url origin https://github.com/Osyanne/cs2-minneapolis-osm-toolkit.git`
+20. Rename repo en GitHub: Settings → Repository name → `cs2-osm-toolkit`
+21. `git remote set-url origin https://github.com/Osyanne/cs2-osm-toolkit.git`
 22. Push del refactor
-23. Renombrar carpeta local: `C:\Users\osyanne\Documents\Claude\Projects\Proyecto mineapolis\cs2-minneapolis-osm-toolkit\`
+23. Renombrar carpeta local: `C:\Users\osyanne\Documents\Claude\Projects\Proyecto mineapolis\cs2-osm-toolkit\`
 
 GitHub mantiene redirect automático del nombre viejo, así que cualquier link externo `cs2-minneapolis-zoning` seguirá funcionando.
 
@@ -298,7 +298,7 @@ GitHub mantiene redirect automático del nombre viejo, así que cualquier link e
 
 ## Decisiones tomadas por el usuario (explícitas, no cuestionar)
 
-1. ✅ Renombrar a `cs2-minneapolis-osm-toolkit`
+1. ✅ Renombrar a `cs2-osm-toolkit`
 2. ✅ Prebuilts a GitHub Releases (sacar del git tracking)
 3. ✅ Sub-carpetas por módulo dentro de `src/`
 4. ✅ Module pills multi-select arriba (no tabs radio)
