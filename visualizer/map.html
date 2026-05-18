@@ -310,9 +310,10 @@ async function bootstrap() {
 
     // 3. Inyectar scripts SOLO para los módulos presentes en el manifest
     const moduleToFile = {
-      zoning:   "datos_zonificacion.js",
-      vial:     "datos_vial.js",
-      services: "datos_servicios.js",
+      zoning:             "datos_zonificacion.js",
+      vial:               "datos_vial.js",
+      services:           "datos_servicios.js",
+      external_buildings: "datos_external_buildings.js",
     };
     const modules = Object.keys(CITY_MANIFEST.modules || {});
     if (modules.length === 0) {
@@ -575,20 +576,41 @@ function renderMap() {
   // ZONING RENDER — prebuilt datos_zonificacion.js
   // Para cada cs2_key del modelo, accede su array DATA_*
   // ══════════════════════════════════════════════════════════════════════════
+  // Concatena DATA_<KEY> (zoning, OSM-derived) + DATA_EXT_<KEY> (external_buildings,
+  // Google Open Buildings ML augmentation). Cualquiera de los dos puede no estar
+  // cargado — si el module no está en el manifest, su global queda undefined.
+  const _merge = (a, b) => {
+    const left  = (typeof a !== "undefined" && Array.isArray(a)) ? a : [];
+    const right = (typeof b !== "undefined" && Array.isArray(b)) ? b : [];
+    return left.concat(right);
+  };
   const PREBUILT_DATASETS = {
-    res_low_house: () => typeof DATA_RES_LOW_HOUSE !== "undefined" ? DATA_RES_LOW_HOUSE : [],
-    res_row:       () => typeof DATA_RES_ROW       !== "undefined" ? DATA_RES_ROW       : [],
-    res_med:       () => typeof DATA_RES_MED       !== "undefined" ? DATA_RES_MED       : [],
-    res_mixed:     () => typeof DATA_RES_MIXED     !== "undefined" ? DATA_RES_MIXED     : [],
-    res_low_rent:  () => typeof DATA_RES_LOW_RENT  !== "undefined" ? DATA_RES_LOW_RENT  : [],
-    res_high:      () => typeof DATA_RES_HIGH      !== "undefined" ? DATA_RES_HIGH      : [],
-    com_low:       () => typeof DATA_COM_LOW       !== "undefined" ? DATA_COM_LOW       : [],
-    com_high:      () => typeof DATA_COM_HIGH      !== "undefined" ? DATA_COM_HIGH      : [],
-    office_low:    () => typeof DATA_OFFICE_LOW    !== "undefined" ? DATA_OFFICE_LOW    : [],
-    office_high:   () => typeof DATA_OFFICE_HIGH   !== "undefined" ? DATA_OFFICE_HIGH   : [],
-    industrial:    () => typeof DATA_INDUSTRIAL    !== "undefined" ? DATA_INDUSTRIAL    : [],
-    prk_surface:   () => typeof DATA_PRK_SURFACE   !== "undefined" ? DATA_PRK_SURFACE   : [],
-    prk_ramp:      () => typeof DATA_PRK_RAMP      !== "undefined" ? DATA_PRK_RAMP      : [],
+    res_low_house: () => _merge(typeof DATA_RES_LOW_HOUSE !== "undefined" ? DATA_RES_LOW_HOUSE : undefined,
+                                typeof DATA_EXT_RES_LOW_HOUSE !== "undefined" ? DATA_EXT_RES_LOW_HOUSE : undefined),
+    res_row:       () => _merge(typeof DATA_RES_ROW !== "undefined" ? DATA_RES_ROW : undefined,
+                                typeof DATA_EXT_RES_ROW !== "undefined" ? DATA_EXT_RES_ROW : undefined),
+    res_med:       () => _merge(typeof DATA_RES_MED !== "undefined" ? DATA_RES_MED : undefined,
+                                typeof DATA_EXT_RES_MED !== "undefined" ? DATA_EXT_RES_MED : undefined),
+    res_mixed:     () => _merge(typeof DATA_RES_MIXED !== "undefined" ? DATA_RES_MIXED : undefined,
+                                typeof DATA_EXT_RES_MIXED !== "undefined" ? DATA_EXT_RES_MIXED : undefined),
+    res_low_rent:  () => _merge(typeof DATA_RES_LOW_RENT !== "undefined" ? DATA_RES_LOW_RENT : undefined,
+                                typeof DATA_EXT_RES_LOW_RENT !== "undefined" ? DATA_EXT_RES_LOW_RENT : undefined),
+    res_high:      () => _merge(typeof DATA_RES_HIGH !== "undefined" ? DATA_RES_HIGH : undefined,
+                                typeof DATA_EXT_RES_HIGH !== "undefined" ? DATA_EXT_RES_HIGH : undefined),
+    com_low:       () => _merge(typeof DATA_COM_LOW !== "undefined" ? DATA_COM_LOW : undefined,
+                                typeof DATA_EXT_COM_LOW !== "undefined" ? DATA_EXT_COM_LOW : undefined),
+    com_high:      () => _merge(typeof DATA_COM_HIGH !== "undefined" ? DATA_COM_HIGH : undefined,
+                                typeof DATA_EXT_COM_HIGH !== "undefined" ? DATA_EXT_COM_HIGH : undefined),
+    office_low:    () => _merge(typeof DATA_OFFICE_LOW !== "undefined" ? DATA_OFFICE_LOW : undefined,
+                                typeof DATA_EXT_OFFICE_LOW !== "undefined" ? DATA_EXT_OFFICE_LOW : undefined),
+    office_high:   () => _merge(typeof DATA_OFFICE_HIGH !== "undefined" ? DATA_OFFICE_HIGH : undefined,
+                                typeof DATA_EXT_OFFICE_HIGH !== "undefined" ? DATA_EXT_OFFICE_HIGH : undefined),
+    industrial:    () => _merge(typeof DATA_INDUSTRIAL !== "undefined" ? DATA_INDUSTRIAL : undefined,
+                                typeof DATA_EXT_INDUSTRIAL !== "undefined" ? DATA_EXT_INDUSTRIAL : undefined),
+    prk_surface:   () => _merge(typeof DATA_PRK_SURFACE !== "undefined" ? DATA_PRK_SURFACE : undefined,
+                                typeof DATA_EXT_PRK_SURFACE !== "undefined" ? DATA_EXT_PRK_SURFACE : undefined),
+    prk_ramp:      () => _merge(typeof DATA_PRK_RAMP !== "undefined" ? DATA_PRK_RAMP : undefined,
+                                typeof DATA_EXT_PRK_RAMP !== "undefined" ? DATA_EXT_PRK_RAMP : undefined),
   };
 
   function renderPrebuilt(zKey, items) {
@@ -599,13 +621,20 @@ function renderMap() {
     for (const item of items) {
       if (!item.coords || item.coords.length < 3) continue;
 
+      // Fuente de cada polígono: OSM (default) o Google Open Buildings ML
+      // (item.src === "google", con confidence score en item.conf).
+      const isExt = item.src === "google";
+      const sourceLine = isExt
+        ? `<span style="color:#555;font-size:10px">Google ML (conf ${item.conf})</span>`
+        : `<span style="color:#555;font-size:10px">OSM id ${item.id}</span>`;
+
       const popup =
         `<div style="min-width:160px">` +
-        `<b style="color:#ddd;font-size:13px">${item.name || "Sin nombre"}</b><br>` +
+        `<b style="color:#ddd;font-size:13px">${item.name || (isExt ? "Building (ML)" : "Sin nombre")}</b><br>` +
         `<span style="display:inline-block;width:10px;height:10px;background:${zone.neon};` +
         `border-radius:2px;margin-right:5px;vertical-align:middle"></span>` +
         `<span style="color:${zone.neon};font-size:11px">${zone.label}</span><br>` +
-        `<span style="color:#555;font-size:10px">OSM id ${item.id}</span></div>`;
+        `${sourceLine}</div>`;
 
       const poly = L.polygon(item.coords, {
         color: zone.neon, fillColor: zone.color,

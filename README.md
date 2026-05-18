@@ -248,9 +248,9 @@ docs/
 
 | | |
 |---|---|
-| **Modules** | 3 modules × 6 cities (Mpls full + 5 zoning-only) — Transit pending |
+| **Modules** | 3 modules × 6 cities (Mpls full + 5 zoning-only) — Transit pending. Mafra also has Google ML augmentation. |
 | **Bounding box** | 6 cities, see `cities.json` |
-| **Total features** | ~474k zoning (Mpls 204k + Amsterdam 138k + Madison 56k + Trondheim 43k + Charleston 32k + Mafra 431) — v3.3.4 generic-buildings pass |
+| **Total features** | ~509k (Mafra got 35.1k Google buildings on top of 431 OSM in v3.3.5; other cities zoning-only) |
 | **Tests** | 176 passing |
 | **Last extracted** | 2026-05-18 |
 

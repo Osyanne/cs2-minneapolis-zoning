@@ -490,5 +490,98 @@ Ver implementación: `src/zoning/extract.py` (`_process_generic_buildings`),
 `src/zoning/classifiers.py` (`classify_generic_building_by_area`,
 `LANDUSE_TO_CS2_KEY`).
 
+---
+
+## Sección 18 — External buildings augmentation: Google Open Buildings (v3.3.5)
+
+### Problema
+
+El generic-buildings pass de v3.3.4 extrajo el 100% de los `building=yes`
+en Mafra (326 polygons clasificados) — y aun así la ciudad quedó con apenas
+431 polygons totales. Causa: **OSM literalmente solo tiene 427 buildings
+tagged en el bbox**. Mafra tiene ~55k habitantes; era estructuralmente
+imposible que OSM contara más buildings sin contribución upstream.
+
+### Solución: ingest ML-detected footprints
+
+Las fuentes globales de building footprints ML-detectados (Microsoft, Google,
+Overture) tienen **>1 billón de buildings** que NO están en OSM. Para zonas
+con OSM sparse, son el complemento natural — geometrías sin tipo, exactamente
+el input para el algoritmo v3.3.4.
+
+Se elige **Google Open Buildings v3** sobre Microsoft Global por:
+- Modelo ML más reciente (1.8B globales vs 1B de MS)
+- Foco explícito en LATAM/África/SE-Asia (target del lanzamiento humanitario)
+- Confidence scores por building (0.65–1.0) → permite filtrar ruido
+- Licencia dual CC BY 4.0 + ODbL (más permisiva que solo ODbL)
+
+### Pipeline (`extract-google-buildings`)
+
+1. **S2 cell lookup**: calcula con `s2sphere` qué S2 cell L6 (~50–100k km²)
+   toca el bbox. Para bboxes urbanos típicos, 1 cell suele bastar.
+2. **Download cacheado**: trae los `<token>_buildings.csv.gz` de
+   `storage.googleapis.com/open-buildings-data/v3/polygons_s2_level_6_gzip_no_header/`.
+   Cache vive en `.cache/google_open_buildings/` (gitignored).
+3. **Landuse polygons via Overpass**: ejecuta las 4 queries de landuse
+   (residential/commercial/industrial/office) para construir el STRtree
+   del spatial join. Reusa `zoning.zones.build_queries`.
+4. **Stream + filter**: parsea el CSV.gz línea por línea, descarta
+   buildings fuera del bbox o con confidence < threshold (default 0.75).
+5. **Classify**: mismo algoritmo que `_process_generic_buildings` —
+   spatial join contra landuse, fallback heurística de área.
+6. **Output**: `visualizer/cities/<slug>/datos_external_buildings.js`
+   con arrays `DATA_EXT_<ZONE>` paralelos a los de zoning. Manifest
+   gana entry `external_buildings`.
+
+### Integración con el visualizer
+
+`map.html` carga el módulo si está en el manifest, y `PREBUILT_DATASETS`
+concatena `DATA_<ZONE>` (OSM) + `DATA_EXT_<ZONE>` (Google) en una sola
+lista por zona. Los polígonos Google llevan `src: "google"` + `conf`,
+visible en el popup. Toggle de layers funciona normalmente para ambos.
+
+### Impacto medido (Mafra primero, 2026-05-18 PM)
+
+| Métrica | OSM-only (v3.3.4) | + Google augment (v3.3.5) | Δ |
+|---|---|---|---|
+| Polygons totales | 431 | **35,552** | **+82×** |
+| res_low_house | 182 | 33,428 | +33,246 |
+| res_med | 113 | 1,798 | +1,685 |
+| industrial | 51 | 241 | +190 |
+| Por landuse spatial join | 4 (de 326) | +96 (de 35,121) | |
+| Por área heurística | 322 | +35,025 | |
+| File size | 28 KB | **11.8 MB** | 420× |
+| OSM building density | 5.8/km² | 480/km² | 82× |
+
+**Lectura:** Mafra ahora se ve poblada. El mapa muestra ~35.5k footprints
+ML-clasificados, dominados por low-density housing (consistente con
+small-town brasileña de viviendas <300 m²). Sin contribución a OSM,
+la ciudad pasó de "casi vacía" a "densamente poblada" en 2 minutos de
+runtime.
+
+### Diseño defensivo
+
+- **OSM siempre gana**: si una way tiene un building específico en OSM
+  (`building=house`), el módulo zoning ya lo capturó en la pasada anterior.
+  Google añade buildings que NO estaban en OSM. No hay sobreescritura.
+- **Confidence threshold opt-in**: el flag `--min-confidence` permite
+  ajustar el filtro de ruido. Default 0.75 es conservador.
+- **Source visible en popup**: el usuario puede distinguir OSM-derived
+  de Google-ML en cualquier polígono. Honestidad sobre la incertidumbre.
+
+### Casos de uso futuros
+
+Cualquier city-request en zona OSM sparse:
+- Latin America small-town
+- Africa subsaharian urbanism
+- SE Asia secondary cities
+- Rural areas anywhere
+
+El operador run-once `extract-google-buildings --city <slug>` añade el
+módulo de ML buildings. El visualizer detecta el manifest y los renderiza.
+
+Ver implementación: `src/zoning/extract_google_buildings.py` (script
+nuevo + entry point `extract-google-buildings`).
+
 Ver spec: `docs/specs/2026-05-17-featured-cities-pack-design.md`
 Ver plan: `docs/plans/2026-05-17-featured-cities-pack.md`

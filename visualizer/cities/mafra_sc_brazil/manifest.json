@@ -3,7 +3,11 @@
     "zoning": {
       "hash": "1a36a769",
       "features": 431
+    },
+    "external_buildings": {
+      "hash": "d39dcec9",
+      "features": 35121
     }
   },
-  "generated_at": "2026-05-18T19:19:46.013551+00:00"
+  "generated_at": "2026-05-18T21:19:17.998419+00:00"
 }

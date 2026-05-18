@@ -1,12 +1,13 @@
 [project]
 name = "cs2-osm-toolkit"
-version = "3.3.4"
+version = "3.3.5"
 description = "GIS toolkit modular: extract OpenStreetMap data for Cities: Skylines 2"
 requires-python = ">=3.11"
 dependencies = [
     "requests>=2.31.0",
     "tqdm>=4.66.0",
     "shapely>=2.0.0",
+    "s2sphere>=0.2.5",
 ]
 
 [dependency-groups]
@@ -19,6 +20,7 @@ dev = [
 extract-zoning = "zoning.extract:main"
 extract-vial   = "vial.extract:main"
 extract-services = "services.extract:main"
+extract-google-buildings = "zoning.extract_google_buildings:main"
 generate-landing = "shared.landing:main"
 
 [build-system]
