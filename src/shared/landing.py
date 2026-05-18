@@ -13,7 +13,7 @@ MODULE_LABELS = {
     "services": "Servicios",
 }
 
-REPO_URL = "https://github.com/Osyanne/cs2-osm-toolkit"
+REPO_URL = "https://github.com/Osyanne/CitiesSkylines2-osm-toolkit"
 ISSUE_NEW_URL = f"{REPO_URL}/issues/new?template=city-request.yml"
 
 

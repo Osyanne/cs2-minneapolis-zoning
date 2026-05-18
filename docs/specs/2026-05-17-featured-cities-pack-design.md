@@ -310,7 +310,7 @@ Habilita la modularidad por demanda sin cambios al pipeline.
 ### 6.1 GitHub Pages setup
 
 - **Source:** `main` branch, directorio `/visualizer`
-- **URL final:** `https://osyanne.github.io/cs2-osm-toolkit/`
+- **URL final:** `https://osyanne.github.io/CitiesSkylines2-osm-toolkit/`
 - **Custom domain:** no en este scope (eventualmente en Phase 3)
 - **Branch de trabajo:** `feature/featured-cities-pack` → PR a main cuando esté smoke-tested
 - **Versioning:** v3.3 (badge en READMEs + CHANGELOG)

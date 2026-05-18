@@ -40,7 +40,7 @@ On **macOS/Linux**:
 
 ## Step 3: Download the Repo
 
-Go to [github.com/Osyanne/cs2-osm-toolkit](https://github.com/Osyanne/cs2-osm-toolkit), click the green **Code** button, then **Download ZIP**.
+Go to [github.com/Osyanne/CitiesSkylines2-osm-toolkit](https://github.com/Osyanne/CitiesSkylines2-osm-toolkit), click the green **Code** button, then **Download ZIP**.
 
 Unzip it somewhere easy to find — your Desktop or Documents folder works fine. You should end up with a folder called something like `cs2-osm-toolkit-main`.
 
@@ -162,4 +162,4 @@ That's it.
 
 See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for fixes for the most common errors, including Python not found, uv not found, Overpass timeouts, and blank visualizer pages.
 
-If your issue isn't listed there, open a GitHub Issue at [github.com/Osyanne/cs2-osm-toolkit/issues](https://github.com/Osyanne/cs2-osm-toolkit/issues) — include the error message and what step you were on.
+If your issue isn't listed there, open a GitHub Issue at [github.com/Osyanne/CitiesSkylines2-osm-toolkit/issues](https://github.com/Osyanne/CitiesSkylines2-osm-toolkit/issues) — include the error message and what step you were on.

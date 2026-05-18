@@ -73,4 +73,4 @@ Para reset de una ciudad: DevTools → Application → Local Storage → borrar 
 
 ## ¿Tu ciudad no está?
 
-Abrí un [City Request issue](https://github.com/Osyanne/cs2-osm-toolkit/issues/new?template=city-request.yml) con el bbox + nombre. Generamos el prebuilt de zoning y publicamos (~30-60 min turnaround si está activo). Vial + services son ampliación on-demand si la ciudad acumula múltiples requests.
+Abrí un [City Request issue](https://github.com/Osyanne/CitiesSkylines2-osm-toolkit/issues/new?template=city-request.yml) con el bbox + nombre. Generamos el prebuilt de zoning y publicamos (~30-60 min turnaround si está activo). Vial + services son ampliación on-demand si la ciudad acumula múltiples requests.

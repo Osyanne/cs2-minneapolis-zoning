@@ -619,7 +619,7 @@ Los archivos `datos_zonificacion.js` (~27 MB) y `datos_vial.js` (~25 MB) NO est�
 
 ### Opción A: Descargar desde GitHub Releases (recomendado)
 
-1. Ir a https://github.com/Osyanne/cs2-osm-toolkit/releases
+1. Ir a https://github.com/Osyanne/CitiesSkylines2-osm-toolkit/releases
 2. Descargar `datos_zonificacion.js` y `datos_vial.js` desde la última release
 3. Colocarlos en este directorio (`visualizer/`)
 
@@ -1254,7 +1254,7 @@ Output: `visualizer/datos_vial.js` (~25 MB)
 ### Setup
 
 ```bash
-git clone https://github.com/Osyanne/cs2-osm-toolkit.git
+git clone https://github.com/Osyanne/CitiesSkylines2-osm-toolkit.git
 cd cs2-osm-toolkit/src
 uv sync
 ```
@@ -1264,7 +1264,7 @@ uv sync
 The prebuilt `datos_*.js` files (~50 MB total) are **not** in this repo. Two ways to get them:
 
 **Option A — Download from GitHub Releases** (recommended):
-1. Go to https://github.com/Osyanne/cs2-osm-toolkit/releases
+1. Go to https://github.com/Osyanne/CitiesSkylines2-osm-toolkit/releases
 2. Download `datos_zonificacion.js` and `datos_vial.js` from the latest release
 3. Place them in `visualizer/`
 
@@ -1416,7 +1416,7 @@ Salida: `visualizer/datos_vial.js` (~25 MB)
 ### Setup
 
 ```bash
-git clone https://github.com/Osyanne/cs2-osm-toolkit.git
+git clone https://github.com/Osyanne/CitiesSkylines2-osm-toolkit.git
 cd cs2-osm-toolkit/src
 uv sync
 ```
@@ -1426,7 +1426,7 @@ uv sync
 Los archivos prebuilt `datos_*.js` (~50 MB en total) **no están** en este repo. Dos opciones:
 
 **Opción A — Descargar desde GitHub Releases** (recomendado):
-1. Ir a https://github.com/Osyanne/cs2-osm-toolkit/releases
+1. Ir a https://github.com/Osyanne/CitiesSkylines2-osm-toolkit/releases
 2. Descargar `datos_zonificacion.js` y `datos_vial.js` desde la última release
 3. Colocarlos en `visualizer/`
 
@@ -1570,7 +1570,7 @@ Reemplazos a aplicar (con `Edit` tool o manualmente):
 | `cs2-minneapolis-zoning` | `cs2-osm-toolkit` |
 | `Minneapolis Zoning Visualizer` | `Minneapolis OSM Toolkit` |
 | `v3.0` | `v3.1` (donde se refiere a la versión del repo) |
-| `github.com/Osyanne/cs2-osm-toolkit` | `github.com/Osyanne/cs2-osm-toolkit` |
+| `github.com/Osyanne/CitiesSkylines2-osm-toolkit` | `github.com/Osyanne/CitiesSkylines2-osm-toolkit` |
 
 - [ ] **Step 2: Para los drafts que mencionan SOLO zonificación (`reddit_01_CitiesSkylines2.md`, `reddit_02_CitiesSkylines.md`, etc.), añadir un párrafo o sección que mencione el nuevo módulo vial**
 
@@ -1639,7 +1639,7 @@ gh repo rename cs2-osm-toolkit --repo Osyanne/cs2-minneapolis-zoning --confirm
 ```
 
 Si `gh` no está disponible o falla, hacer manualmente:
-1. Ir a https://github.com/Osyanne/cs2-osm-toolkit/settings
+1. Ir a https://github.com/Osyanne/CitiesSkylines2-osm-toolkit/settings
 2. Scroll hasta "Repository name"
 3. Cambiar a `cs2-osm-toolkit`
 4. Click "Rename"
@@ -1649,7 +1649,7 @@ GitHub mantiene redirects desde el nombre viejo, así que cualquier link existen
 - [ ] **Step 2: Actualizar el remote local**
 
 ```bash
-git remote set-url origin https://github.com/Osyanne/cs2-osm-toolkit.git
+git remote set-url origin https://github.com/Osyanne/CitiesSkylines2-osm-toolkit.git
 git remote -v
 # Expected: origin con la URL nueva
 ```
@@ -1720,7 +1720,7 @@ EOF
 ```
 
 Si `gh` no está disponible, hacer manualmente desde GitHub:
-1. Ir a https://github.com/Osyanne/cs2-osm-toolkit/releases/new
+1. Ir a https://github.com/Osyanne/CitiesSkylines2-osm-toolkit/releases/new
 2. Tag: `v3.1`
 3. Title: "v3.1 — Toolkit reorganization + Road Network Module"
 4. Adjuntar `visualizer/datos_zonificacion.js` y `visualizer/datos_vial.js` como assets
@@ -1733,7 +1733,7 @@ gh release view v3.1
 # Expected: muestra los 2 assets adjuntados
 ```
 
-O ir a https://github.com/Osyanne/cs2-osm-toolkit/releases/tag/v3.1
+O ir a https://github.com/Osyanne/CitiesSkylines2-osm-toolkit/releases/tag/v3.1
 
 ---
 
@@ -1770,13 +1770,13 @@ Editar `C:\Users\osyanne\Documents\Brain\01-Proyectos\CS2-Mineapolis\🏙 CS2-Mi
 
 Buscar:
 ```
-**Repo:** https://github.com/Osyanne/cs2-osm-toolkit (v3.0 push 2026-05-15)
+**Repo:** https://github.com/Osyanne/CitiesSkylines2-osm-toolkit (v3.0 push 2026-05-15)
 **Carpeta local:** `C:\Users\osyanne\Documents\Claude\Projects\Proyecto mineapolis\cs2-minneapolis-zoning\`
 ```
 
 Reemplazar por:
 ```
-**Repo:** https://github.com/Osyanne/cs2-osm-toolkit (v3.1 push 2026-05-15)
+**Repo:** https://github.com/Osyanne/CitiesSkylines2-osm-toolkit (v3.1 push 2026-05-15)
 **Carpeta local:** `C:\Users\osyanne\Documents\Claude\Projects\Proyecto mineapolis\cs2-osm-toolkit\`
 ```
 
@@ -1786,14 +1786,14 @@ Editar `C:\Users\osyanne\.claude\projects\C--Users-osyanne\memory\proyecto_cs2_m
 
 Buscar:
 ```
-**Repo:** https://github.com/Osyanne/cs2-osm-toolkit (público, v3.0 pusheado 2026-05-15)
+**Repo:** https://github.com/Osyanne/CitiesSkylines2-osm-toolkit (público, v3.0 pusheado 2026-05-15)
 
 **Workspace local:** `C:\Users\osyanne\Documents\Claude\Projects\Proyecto mineapolis\cs2-minneapolis-zoning\`
 ```
 
 Reemplazar por:
 ```
-**Repo:** https://github.com/Osyanne/cs2-osm-toolkit (público, v3.1 pusheado 2026-05-15, renombrado de cs2-minneapolis-zoning)
+**Repo:** https://github.com/Osyanne/CitiesSkylines2-osm-toolkit (público, v3.1 pusheado 2026-05-15, renombrado de cs2-minneapolis-zoning)
 
 **Workspace local:** `C:\Users\osyanne\Documents\Claude\Projects\Proyecto mineapolis\cs2-osm-toolkit\`
 ```
@@ -1838,7 +1838,7 @@ Ctrl+C para apagar el server cuando termines.
 - [ ] **Step 3: Verificar el remoto en GitHub**
 
 ```bash
-gh repo view Osyanne/cs2-osm-toolkit
+gh repo view Osyanne/CitiesSkylines2-osm-toolkit
 # Expected: muestra info del repo renombrado, branch main al día
 ```
 

@@ -265,7 +265,7 @@ El plan de implementación detalla los pasos. Aquí solo los hitos:
 
 ### Fase E — GitHub
 20. Rename repo en GitHub: Settings → Repository name → `cs2-osm-toolkit`
-21. `git remote set-url origin https://github.com/Osyanne/cs2-osm-toolkit.git`
+21. `git remote set-url origin https://github.com/Osyanne/CitiesSkylines2-osm-toolkit.git`
 22. Push del refactor
 23. Renombrar carpeta local: `C:\Users\osyanne\Documents\Claude\Projects\Proyecto mineapolis\cs2-osm-toolkit\`
 

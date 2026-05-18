@@ -16,7 +16,7 @@
 
 El toolkit ahora soporta **6 ciudades** out-of-the-box, accesibles vía el visualizer hosteado en:
 
-**https://osyanne.github.io/cs2-osm-toolkit/**
+**https://osyanne.github.io/CitiesSkylines2-osm-toolkit/**
 
 | Ciudad | País | Módulos |
 |--------|------|---------|
@@ -27,11 +27,11 @@ El toolkit ahora soporta **6 ciudades** out-of-the-box, accesibles vía el visua
 | Madison, WI | USA | Zoning |
 | Charleston, SC | USA | Zoning |
 
-Vial + servicios para las 5 ciudades nuevas son **on-demand**: abrí un [City Request issue](https://github.com/Osyanne/cs2-osm-toolkit/issues/new?template=city-request.yml) pidiéndolas, y las generamos.
+Vial + servicios para las 5 ciudades nuevas son **on-demand**: abrí un [City Request issue](https://github.com/Osyanne/CitiesSkylines2-osm-toolkit/issues/new?template=city-request.yml) pidiéndolas, y las generamos.
 
 ### Agregá tu ciudad
 
-Abrí un [City Request issue](https://github.com/Osyanne/cs2-osm-toolkit/issues/new?template=city-request.yml) con el bbox + nombre. Generamos el prebuilt de zoning y publicamos (~30-60 min de turnaround si está activo).
+Abrí un [City Request issue](https://github.com/Osyanne/CitiesSkylines2-osm-toolkit/issues/new?template=city-request.yml) con el bbox + nombre. Generamos el prebuilt de zoning y publicamos (~30-60 min de turnaround si está activo).
 
 ### Rename del repo — pendiente
 
@@ -45,7 +45,7 @@ Este repo se va a renombrar a `cs2-osm-toolkit` para reflejar el soporte multi-c
 
 Dos opciones:
 
-**Opción 1 — Hosteado (sin setup, sin instalar nada):** Visitá https://osyanne.github.io/cs2-osm-toolkit/ en tu browser. Hacé clic en cualquiera de las 5 tarjetas de ciudad para abrir el mapa.
+**Opción 1 — Hosteado (sin setup, sin instalar nada):** Visitá https://osyanne.github.io/CitiesSkylines2-osm-toolkit/ en tu browser. Hacé clic en cualquiera de las 5 tarjetas de ciudad para abrir el mapa.
 
 **Opción 2 — Clonar localmente (necesitás un mini HTTP server):** Cloná el repo, después serví el folder `visualizer/` por HTTP:
 
@@ -145,7 +145,7 @@ Salida: `visualizer/cities/minneapolis/datos_servicios.js` (~1,3 MB)
 ### Setup
 
 ```bash
-git clone https://github.com/Osyanne/cs2-osm-toolkit.git
+git clone https://github.com/Osyanne/CitiesSkylines2-osm-toolkit.git
 cd cs2-osm-toolkit/src
 uv sync
 ```

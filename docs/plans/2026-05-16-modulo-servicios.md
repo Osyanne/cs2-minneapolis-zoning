@@ -474,4 +474,4 @@ Conscientemente fuera de Sesión 3:
 - [Sesión 2 — Módulo Red Vial](./2026-05-15-modulo-vial.md) — 108k features, 6 categorías, paleta rojo/naranja/marrón/gris/cian/verde
 - [Sesión 2.5 — Toolkit Reorg v3.1](../specs/2026-05-15-toolkit-reorg-design.md) — sub-paquetes `src/shared/`, `src/vial/`, `src/zoning/`
 
-**Repo:** https://github.com/Osyanne/cs2-osm-toolkit (v3.1 publicado, prebuilts en GitHub Releases)
+**Repo:** https://github.com/Osyanne/CitiesSkylines2-osm-toolkit (v3.1 publicado, prebuilts en GitHub Releases)
