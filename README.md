@@ -73,6 +73,14 @@ The short version:
 
 4. Run `uv run generate-landing` to update the landing page
 
+5. (Optional) Generate a city card thumbnail for the landing page:
+
+        uv sync --group thumbnails               # one-time install (~300 MB Chromium)
+        uv run --group thumbnails playwright install chromium   # one-time
+        uv run --group thumbnails generate-thumbnails           # auto-detects missing
+
+   `generate-thumbnails` reads `cities.json`, navigates to the deployed map URL per city, hides UI chrome, and saves a 1200×800 PNG to `visualizer/assets/thumbnails/<slug>.png`. Run with `--city <slug>` for a specific one, `--force` to regenerate all, or `--base-url http://localhost:8080` to target a local dev server.
+
 For ad-hoc one-off extracts without modifying `cities.json`, use the escape hatch: `uv run extract-zoning --bbox "south,west,north,east" --slug your_slug` (both flags required together).
 
 **Common issues?** See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).

@@ -15,6 +15,12 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
 ]
+# Opt-in: pesado (~300 MB Chromium binary). Instalar con:
+#   uv sync --group thumbnails
+#   uv run --group thumbnails playwright install chromium
+thumbnails = [
+    "playwright>=1.40.0",
+]
 
 # Entry points por módulo
 [project.scripts]
@@ -23,6 +29,7 @@ extract-vial   = "vial.extract:main"
 extract-services = "services.extract:main"
 extract-google-buildings = "zoning.extract_google_buildings:main"
 generate-landing = "shared.landing:main"
+generate-thumbnails = "shared.thumbnails:main"
 
 [build-system]
 requires = ["hatchling"]
