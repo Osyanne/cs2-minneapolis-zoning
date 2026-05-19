@@ -1,6 +1,6 @@
 [project]
 name = "cs2-osm-toolkit"
-version = "3.3.7"
+version = "3.4.0"
 description = "GIS toolkit modular: extract OpenStreetMap data for Cities: Skylines 2"
 requires-python = ">=3.11"
 dependencies = [
@@ -8,6 +8,7 @@ dependencies = [
     "tqdm>=4.66.0",
     "shapely>=2.0.0",
     "s2sphere>=0.2.5",
+    "osmium>=3.7.0",
 ]
 
 [dependency-groups]
