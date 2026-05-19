@@ -7,11 +7,13 @@
 **Architecture:** Adapter pattern. New `shared/pbf_client.py` exposes the same `query_with_retry(query, label) -> dict` signature as `shared/overpass_client.py` but reads from a cached regional PBF and re-emits results in Overpass-compatible shape. Each `zones.py` adds a `build_pbf_filters(bbox)` sibling next to `build_queries(bbox)` returning structured filter specs. Each `extract*.py` imports from `pbf_client` instead of `overpass_client`, with the old client kept as fallback under a `--source=overpass` CLI flag for one minor version (deprecate in v3.5.0, remove in v4.0.0).
 
 **Tech Stack:**
-- `pyrosm>=0.6.2` — PBF reader returning GeoDataFrames
-- `shapely>=2.0.0` — already in deps, geometry ops
+- `pyosmium>=3.7.0` — Official OSM Python binding to libosmium (C++). Handler-based API, returns native osmium objects. Wheels available for Python 3.11–3.14.
+- `shapely>=2.0.0` — already in deps, geometry ops (parses WKB from pyosmium's WKBFactory)
 - `requests>=2.31.0` — already in deps, used for Geofabrik downloads
 - `pytest>=7.0.0` — already in deps
 - Geofabrik download URLs — https://download.geofabrik.de/
+
+> **2026-05-18 plan revision:** Originally specified `pyrosm`. Pivoted to `pyosmium` because pyrosm's transitive dep `pyrobuf 0.9.3` uses a deprecated `distutils` API that fails on modern setuptools (project venv is Python 3.14). Tasks 4–7 (pbf_client implementation) use the pyosmium handler pattern instead of pyrosm's GeoDataFrame accessors — will be revised in detail when Phase 3 starts.
 
 ---
 
@@ -68,7 +70,7 @@ uv run pytest -v
 
 Expected: All existing tests pass. Record the count (e.g. "42 passed"). If any fail before our changes, stop and report — we need a green baseline.
 
-- [ ] **Step 0.2: Add pyrosm to dependencies**
+- [ ] **Step 0.2: Add pyosmium to dependencies**
 
 Modify `src/pyproject.toml`:
 
@@ -83,9 +85,11 @@ dependencies = [
     "tqdm>=4.66.0",
     "shapely>=2.0.0",
     "s2sphere>=0.2.5",
-    "pyrosm>=0.6.2",
+    "osmium>=3.7.0",
 ]
 ```
+
+Note: PyPI package name is `osmium` (the import name is also `osmium`). The library is officially called "pyosmium" but installs as `osmium`.
 
 - [ ] **Step 0.3: Install new dependency**
 
@@ -94,22 +98,22 @@ cd src
 uv sync
 ```
 
-Expected: `pyrosm` and its transitive deps (`pyrobuf`, `geopandas`, `python-rapidjson`) install successfully.
+Expected: `osmium` installs from a prebuilt wheel (it ships wheels for Python 3.11–3.14 on Windows/macOS/Linux).
 
-- [ ] **Step 0.4: Verify pyrosm imports**
+- [ ] **Step 0.4: Verify osmium imports**
 
 ```bash
 cd src
-uv run python -c "import pyrosm; print(pyrosm.__version__)"
+uv run python -c "import osmium; print(osmium.__version__)"
 ```
 
-Expected: prints a version `>=0.6.2`.
+Expected: prints a version `>=3.7.0`.
 
 - [ ] **Step 0.5: Commit**
 
 ```bash
 git add src/pyproject.toml src/uv.lock
-git commit -m "chore(deps): add pyrosm 0.6.2 for PBF extraction, bump to v3.4.0-dev"
+git commit -m "chore(deps): add pyosmium 3.7.0 for PBF extraction, bump to v3.4.0-dev"
 ```
 
 ---
